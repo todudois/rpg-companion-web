@@ -5,6 +5,8 @@ interface RPGContextType {
   setActiveCharacterId: (id: number | null) => void;
   activeRole: "unassigned" | "mestre" | "jogador";
   setActiveRole: (role: "unassigned" | "mestre" | "jogador") => void;
+  activeMasterId: number | null;
+  setActiveMasterId: (id: number | null) => void;
 }
 
 const RPGContext = createContext<RPGContextType | undefined>(undefined);
@@ -20,6 +22,11 @@ export function RPGProvider({ children }: { children: React.ReactNode }) {
     return (saved as any) || "unassigned";
   });
 
+  const [activeMasterId, setActiveMasterId] = useState<number | null>(() => {
+    const saved = localStorage.getItem("rpg_activeMasterId");
+    return saved ? parseInt(saved) : null;
+  });
+
   useEffect(() => {
     localStorage.setItem("rpg_activeCharacterId", activeCharacterId?.toString() || "");
   }, [activeCharacterId]);
@@ -28,8 +35,12 @@ export function RPGProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("rpg_activeRole", activeRole);
   }, [activeRole]);
 
+  useEffect(() => {
+    localStorage.setItem("rpg_activeMasterId", activeMasterId?.toString() || "");
+  }, [activeMasterId]);
+
   return (
-    <RPGContext.Provider value={{ activeCharacterId, setActiveCharacterId, activeRole, setActiveRole }}>
+    <RPGContext.Provider value={{ activeCharacterId, setActiveCharacterId, activeRole, setActiveRole, activeMasterId, setActiveMasterId }}>
       {children}
     </RPGContext.Provider>
   );

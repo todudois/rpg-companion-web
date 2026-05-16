@@ -189,7 +189,6 @@ export const rpgRouter = router({
     create: protectedProcedure
       .input(diceRollSchema)
       .mutation(async ({ ctx, input }) => {
-        // Validate character ownership if provided
         if (input.characterId) {
           const character = await getCharacterById(input.characterId);
           if (!character) {
@@ -203,15 +202,21 @@ export const rpgRouter = router({
       }),
   }),
 
-  // Master canvas procedures
+  // Master canvas procedures - shared canvas for master and players
   masterCanvas: router({
-    get: protectedProcedure.query(async ({ ctx }) => {
-      return getMasterCanvasData(ctx.user.id);
-    }),
+    get: protectedProcedure
+      .input(z.object({ masterId: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        // If masterId is provided, get the master's canvas (for players viewing)
+        // Otherwise, get the current user's canvas (for the master)
+        const userId = input?.masterId || ctx.user.id;
+        return getMasterCanvasData(userId);
+      }),
 
     save: protectedProcedure
       .input(z.object({ canvasData: z.string() }))
       .mutation(async ({ ctx, input }) => {
+        // Only the user can save their own canvas
         return upsertMasterCanvasData(ctx.user.id, input.canvasData);
       }),
   }),

@@ -20,11 +20,6 @@ const ATTRIBUTES = [
 ];
 
 export default function DiceRollPage() {
-  const utils = trpc.useUtils();
-  const { data: characters } = trpc.rpg.characters.list.useQuery();
-  const { data: diceHistory } = trpc.rpg.diceRolls.list.useQuery({ limit: 50 });
-  const createRollMutation = trpc.rpg.diceRolls.create.useMutation();
-
   const [numDice, setNumDice] = useState(1);
   const [diceType, setDiceType] = useState(20);
   const [manualBonus, setManualBonus] = useState(0);
@@ -34,6 +29,15 @@ export default function DiceRollPage() {
   const [displayNum, setDisplayNum] = useState<number | null>(null);
   const [lastRoll, setLastRoll] = useState<any>(null);
   const [characterAttributes, setCharacterAttributes] = useState<any>(null);
+
+  const utils = trpc.useUtils();
+  const { data: characters } = trpc.rpg.characters.list.useQuery();
+  const { data: diceHistory } = trpc.rpg.diceRolls.list.useQuery({ limit: 50 });
+  const createRollMutation = trpc.rpg.diceRolls.create.useMutation();
+  const { data: attributesData } = trpc.rpg.attributes.get.useQuery(
+    { characterId: parseInt(selectedCharacterId) },
+    { enabled: !!selectedCharacterId }
+  );
 
   const selectedChar = characters?.find((c) => c.id === parseInt(selectedCharacterId));
 
@@ -89,20 +93,20 @@ export default function DiceRollPage() {
   };
 
   useEffect(() => {
-    if (selectedChar) {
+    if (attributesData) {
       setCharacterAttributes({
-        for: 0,
-        des: 0,
-        con: 0,
-        int: 0,
-        sab: 0,
-        car: 0,
-        sob: 0,
-        sor: 0,
-        fe: 0,
+        for: attributesData.for || 0,
+        des: attributesData.des || 0,
+        con: attributesData.con || 0,
+        int: attributesData.int || 0,
+        sab: attributesData.sab || 0,
+        car: attributesData.car || 0,
+        sob: attributesData.sob || 0,
+        sor: attributesData.sor || 0,
+        fe: attributesData.fe || 0,
       });
     }
-  }, [selectedChar]);
+  }, [attributesData]);
 
   const attrBonus =
     selectedAttribute !== "none" && characterAttributes
@@ -247,6 +251,11 @@ export default function DiceRollPage() {
               {lastRoll.isCrit && <p className="text-amber-400 font-bold">⭐ CRÍTICO NATURAL! ⭐</p>}
               {lastRoll.isFail && <p className="text-red-400 font-bold">💀 FALHA CRÍTICA!</p>}
               <p>Dados: [{lastRoll.pureResults.join(", ")}]</p>
+              {lastRoll.totalUnitBonus !== 0 && (
+                <p className={lastRoll.totalUnitBonus > 0 ? "text-green-400" : "text-red-400"}>
+                  Bônus: {lastRoll.totalUnitBonus >= 0 ? "+" : ""}{lastRoll.totalUnitBonus}
+                </p>
+              )}
             </div>
           )}
           <Button
@@ -278,6 +287,11 @@ export default function DiceRollPage() {
                 <div key={roll.id} className="flex items-center gap-2 text-xs text-slate-400 bg-slate-700 p-2 rounded">
                   <span className="font-mono">{roll.numDice}d{roll.diceType}</span>
                   <span className="flex-1">[{(roll.pureResults as number[]).join(", ")}]</span>
+                  {roll.totalUnitBonus !== 0 && (
+                    <span className={roll.totalUnitBonus > 0 ? "text-green-400" : "text-red-400"}>
+                      {roll.totalUnitBonus >= 0 ? "+" : ""}{roll.totalUnitBonus}
+                    </span>
+                  )}
                   <span className="font-bold text-slate-100">{roll.total}</span>
                 </div>
               ))}

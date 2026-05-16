@@ -47,10 +47,26 @@
 ## Testes e Qualidade
 - [x] Escrever testes vitest para procedures tRPC
 - [x] Testar fluxo completo de autenticação
-- [ ] Testar CRUD de personagens
-- [ ] Testar rolagem de dados
-- [ ] Validar persistência em banco de dados
+- [x] Testar CRUD de personagens
+- [x] Testar rolagem de dados
+- [x] Validar persistência em banco de dados
 
 ## Publicação
 - [ ] Criar checkpoint final
 - [ ] Publicar site
+
+## Novos Requisitos (Adicionados pelo Usuário)
+
+### Atributos Personalizáveis
+- [x] Criar UI para editar atributos de cada personagem
+- [x] Implementar persistência de atributos no banco
+- [x] Aplicar bônus de atributos dinamicamente na rolagem de dados
+- [x] Exibir bônus aplicados no histórico de rolagens
+
+### Canvas Compartilhado
+- [x] Restringir edição do canvas apenas ao Mestre
+- [x] Permitir que todos os jogadores vejam o canvas
+- [x] Implementar atualização em tempo real do canvas
+- [x] Sincronizar canvas entre múltiplos usuários
+- [x] Integrar masterId no contexto RPG
+- [x] Adicionar suporte a masterId nos procedures tRPC

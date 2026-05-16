@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import LobbyPage from "./rpg/LobbyPage";
 import DiceRollPage from "./rpg/DiceRollPage";
 import CharactersPage from "./rpg/CharactersPage";
+import CharacterAttributesPage from "./rpg/CharacterAttributesPage";
 import MasterScreenPage from "./rpg/MasterScreenPage";
 
 export default function Home() {
@@ -91,7 +92,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-slate-800 border border-slate-700 mb-6">
+          <TabsList className="bg-slate-800 border border-slate-700 mb-6 flex-wrap">
             <TabsTrigger value="lobby" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
               🏢 Lobby
             </TabsTrigger>
@@ -101,11 +102,12 @@ export default function Home() {
             <TabsTrigger value="personagens" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
               ⚔️ Personagens
             </TabsTrigger>
-            {activeRole === "mestre" && (
-              <TabsTrigger value="mestre" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
-                🗺️ Tela do Mestre
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="atributos" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+              📊 Atributos
+            </TabsTrigger>
+            <TabsTrigger value="mestre" className={`${activeRole === "mestre" ? "data-[state=active]:bg-red-600" : "data-[state=active]:bg-blue-600"} data-[state=active]:text-white`}>
+              🗺️ Tela do Mestre
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="lobby" className="mt-0">
@@ -120,11 +122,13 @@ export default function Home() {
             <CharactersPage />
           </TabsContent>
 
-          {activeRole === "mestre" && (
-            <TabsContent value="mestre" className="mt-0">
-              <MasterScreenPage />
-            </TabsContent>
-          )}
+          <TabsContent value="atributos" className="mt-0">
+            <CharacterAttributesPage />
+          </TabsContent>
+
+          <TabsContent value="mestre" className="mt-0">
+            <MasterScreenPage readOnly={activeRole !== "mestre"} />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
