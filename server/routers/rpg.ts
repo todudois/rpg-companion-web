@@ -26,6 +26,8 @@ import {
   getActiveLobbysByMasterId,
   getAvailableLobbys,
   closeLobby,
+  deleteLobby,
+  getMasterInLobby,
 } from "../db";
 
 const characterSchema = z.object({
@@ -247,6 +249,18 @@ export const rpgRouter = router({
     leave: protectedProcedure.mutation(async ({ ctx }) => {
       return removeSessionParticipant(ctx.user.id);
     }),
+
+    updateRole: protectedProcedure
+      .input(z.object({ lobbyId: z.number(), role: z.enum(["mestre", "jogador", "espectador", "indefinido"]) }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.role === "mestre") {
+          const existingMaster = await getMasterInLobby(input.lobbyId);
+          if (existingMaster && existingMaster.userId !== ctx.user.id) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Já existe um Mestre neste lobby" });
+          }
+        }
+        return upsertSessionParticipant(ctx.user.id, input.lobbyId, null, input.role);
+      }),
   }),
 
   lobby: router({
@@ -255,7 +269,11 @@ export const rpgRouter = router({
       .mutation(async ({ ctx, input }) => {
         const passwordHash = await hash(input.password, 10);
         const accessCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        return createLobby(ctx.user.id, input.name, passwordHash, accessCode);
+        const lobby = await createLobby(ctx.user.id, input.name, passwordHash, accessCode);
+        if (lobby?.id) {
+          await upsertSessionParticipant(ctx.user.id, lobby.id, null, "mestre");
+        }
+        return lobby;
       }),
 
     getAvailable: protectedProcedure.query(async () => {
@@ -295,6 +313,25 @@ export const rpgRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Apenas o Mestre pode fechar o lobby" });
         }
         return closeLobby(input.lobbyId);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ lobbyId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const lobby = await getLobbyById(input.lobbyId);
+        if (!lobby) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        if (lobby.masterId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Apenas o criador pode deletar o lobby" });
+        }
+        return deleteLobby(input.lobbyId);
+      }),
+
+    getMasterStatus: protectedProcedure
+      .input(z.object({ lobbyId: z.number() }))
+      .query(async ({ input }) => {
+        return getMasterInLobby(input.lobbyId);
       }),
   }),
 });

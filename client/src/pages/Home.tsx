@@ -63,16 +63,18 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-amber-500 font-serif">RPG Companion</h1>
           </div>
           <div className="flex items-center gap-4">
-            {(activeRole === "mestre" || activeRole === "jogador") && (
+            {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
               <div className="flex items-center gap-2">
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-bold ${
                     activeRole === "mestre"
                       ? "bg-red-900 text-red-200"
-                      : "bg-blue-900 text-blue-200"
+                      : activeRole === "jogador"
+                      ? "bg-blue-900 text-blue-200"
+                      : "bg-purple-900 text-purple-200"
                   }`}
                 >
-                  {activeRole === "mestre" ? "👑 MESTRE" : "⚔️ JOGADOR"}
+                  {activeRole === "mestre" ? "👑 MESTRE" : activeRole === "jogador" ? "⚔️ JOGADOR" : "👁️ ESPECTADOR"}
                 </span>
                 {activeCharacterId && activeRole === "jogador" && (
                   <span className="text-xs text-slate-400">ID: {activeCharacterId}</span>
@@ -111,26 +113,38 @@ export default function Home() {
             <TabsTrigger value="lobby" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
               🏢 Lobby
             </TabsTrigger>
-            <TabsTrigger value="dados" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
-              🎲 Dados e Painel
-            </TabsTrigger>
+            {(activeRole === "mestre" || activeRole === "jogador") && (
+              <TabsTrigger value="dados" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+                🎲 Dados e Painel
+              </TabsTrigger>
+            )}
             {activeRole === "jogador" && (
               <TabsTrigger value="personagens" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
                 ⚔️ Personagens
               </TabsTrigger>
             )}
-            <TabsTrigger value="mestre" className={`${activeRole === "mestre" ? "data-[state=active]:bg-red-600" : "data-[state=active]:bg-blue-600"} data-[state=active]:text-white`}>
-              🗺️ Tela do Mestre
-            </TabsTrigger>
+            {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
+              <TabsTrigger value="mestre" className={`${
+                activeRole === "mestre"
+                  ? "data-[state=active]:bg-red-600"
+                  : activeRole === "jogador"
+                  ? "data-[state=active]:bg-blue-600"
+                  : "data-[state=active]:bg-purple-600"
+              } data-[state=active]:text-white`}>
+                🗺️ Tela do Mestre
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="lobby" className="mt-0">
             <LobbyPage />
           </TabsContent>
 
-          <TabsContent value="dados" className="mt-0">
-            <DiceRollPage />
-          </TabsContent>
+          {(activeRole === "mestre" || activeRole === "jogador") && (
+            <TabsContent value="dados" className="mt-0">
+              <DiceRollPage />
+            </TabsContent>
+          )}
 
           {activeRole === "jogador" && (
             <TabsContent value="personagens" className="mt-0">
@@ -138,9 +152,11 @@ export default function Home() {
             </TabsContent>
           )}
 
-          <TabsContent value="mestre" className="mt-0">
-            <MasterScreenPage readOnly={activeRole !== "mestre"} />
-          </TabsContent>
+          {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
+            <TabsContent value="mestre" className="mt-0">
+              <MasterScreenPage readOnly={activeRole !== "mestre"} />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

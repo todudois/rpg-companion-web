@@ -179,7 +179,7 @@ export const sessionParticipants = mysqlTable("sessionParticipants", {
   userId: int("userId").notNull(),
   lobbyId: int("lobbyId").notNull(),
   characterId: int("characterId"),
-  role: mysqlEnum("role", ["mestre", "jogador"]).notNull(),
+  role: mysqlEnum("role", ["mestre", "jogador", "espectador", "indefinido"]).notNull().default("indefinido"),
   lastActiveAt: timestamp("lastActiveAt").defaultNow().onUpdateNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

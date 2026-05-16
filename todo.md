@@ -128,3 +128,39 @@
 - [x] Filtrar participantes por lobby
 - [x] Ao entrar em lobby, adicionar à sessão do lobby
 - [x] Ao sair do lobby, remover da sessão
+
+
+## Novos Requisitos - Sistema de Lobbys Avançado
+
+### Exclusão e Gerenciamento de Lobbys
+- [x] Adicionar botão de deletar lobby (apenas para criador)
+- [x] Implementar procedure tRPC para deletar lobby
+- [x] Validar ownership antes de deletar
+
+### Abas de Lobbys
+- [x] Criar abas "Meus Lobbys" e "Lobbys Públicos"
+- [x] Filtrar lobbys criados pelo usuário em "Meus"
+- [x] Listar lobbys públicos em "Públicos"
+- [x] Mostrar opção de deletar apenas em "Meus Lobbys"
+
+### Tela Inicial = Seleção de Lobbys
+- [x] Fazer LobbySelectionPage ser a rota inicial (/)
+- [x] Remover necessidade de escolher role antes de entrar no lobby
+- [x] Mostrar role como "Indefinido" até escolher
+
+### Um Mestre por Lobby
+- [x] Validar se já existe Mestre no lobby
+- [x] Desabilitar opção "Mestre" se já houver um
+- [x] Permitir trocar de Mestre apenas se atual deixar o cargo
+- [x] Mostrar quem é o Mestre atual no painel
+
+### Role Espectador
+- [x] Adicionar "Espectador" como novo role no schema
+- [x] Espectador vê: Lobby + Canvas do Mestre (visibilidade condicional implementada)
+- [x] Espectador NÃO vê: Personagens, Dados, Atributos (visibilidade condicional implementada)
+- [x] Adicionar botão "Espectador" na seleção de role
+
+### Participantes sem Role
+- [x] Mostrar participantes como "Indefinido" até escolher role
+- [x] Atualizar painel de participantes para mostrar role atual
+- [x] Permitir trocar de role a qualquer momento

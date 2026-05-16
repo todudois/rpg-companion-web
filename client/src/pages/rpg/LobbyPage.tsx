@@ -1,21 +1,38 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useRPG } from "@/contexts/RPGContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Users, Crown, Sword } from "lucide-react";
+import { Users, Crown, Sword, Eye } from "lucide-react";
 
 export default function LobbyPage() {
   const { user } = useAuth();
   const { activeRole, setActiveRole, activeCharacterId, setActiveCharacterId, activeMasterId } = useRPG();
   const { data: characters } = trpc.rpg.characters.list.useQuery();
-  const { data: allUsers } = trpc.rpg.session.getUsers.useQuery(
+  const { data: allUsers, refetch: refetchUsers } = trpc.rpg.session.getUsers.useQuery(
     { lobbyId: activeMasterId || 0 },
     { enabled: !!activeMasterId }
   );
+  const updateRoleMutation = trpc.rpg.session.updateRole.useMutation();
 
   const selectedCharacter = characters?.find((c) => c.id === activeCharacterId);
+  const hasMaster = allUsers?.some(u => u.role === "mestre");
+  const currentUserRole = allUsers?.find(u => u.userId === user?.id)?.role;
+
+  const handleRoleChange = async (newRole: string) => {
+    if (!activeMasterId) return;
+    try {
+      await updateRoleMutation.mutateAsync({
+        lobbyId: activeMasterId,
+        role: newRole as "mestre" | "jogador" | "espectador" | "indefinido",
+      });
+      setActiveRole(newRole as any);
+      refetchUsers();
+    } catch (error: any) {
+      console.error("Erro ao atualizar role:", error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -30,30 +47,48 @@ export default function LobbyPage() {
         <CardContent className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold mb-4">Escolha seu papel:</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Button
-                onClick={() => setActiveRole("mestre")}
+                onClick={() => handleRoleChange("mestre")}
+                disabled={hasMaster && currentUserRole !== "mestre"}
                 variant={activeRole === "mestre" ? "default" : "outline"}
-                className={`h-24 text-lg ${
+                className={`h-24 text-lg flex flex-col items-center justify-center gap-2 ${
                   activeRole === "mestre"
                     ? "bg-red-600 hover:bg-red-700 text-white"
                     : "border-slate-600 text-slate-300 hover:bg-slate-700"
-                }`}
+                } ${hasMaster && currentUserRole !== "mestre" ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                👑 Entrar como Mestre
+                <Crown className="h-6 w-6" />
+                <span>Mestre</span>
               </Button>
               <Button
-                onClick={() => setActiveRole("jogador")}
+                onClick={() => handleRoleChange("jogador")}
                 variant={activeRole === "jogador" ? "default" : "outline"}
-                className={`h-24 text-lg ${
+                className={`h-24 text-lg flex flex-col items-center justify-center gap-2 ${
                   activeRole === "jogador"
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "border-slate-600 text-slate-300 hover:bg-slate-700"
                 }`}
               >
-                🛡️ Entrar como Jogador
+                <Sword className="h-6 w-6" />
+                <span>Jogador</span>
+              </Button>
+              <Button
+                onClick={() => handleRoleChange("espectador")}
+                variant={activeRole === "espectador" ? "default" : "outline"}
+                className={`h-24 text-lg flex flex-col items-center justify-center gap-2 ${
+                  activeRole === "espectador"
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                <Eye className="h-6 w-6" />
+                <span>Espectador</span>
               </Button>
             </div>
+            {hasMaster && currentUserRole !== "mestre" && (
+              <p className="text-sm text-red-400 mt-3">⚠️ Já existe um Mestre neste lobby</p>
+            )}
           </div>
 
           {/* Character Selection for Players */}
@@ -82,74 +117,51 @@ export default function LobbyPage() {
             </div>
           )}
 
-          {/* Info Box */}
-          <div className="bg-slate-700 border border-slate-600 rounded-lg p-4 text-sm text-slate-300">
-            <p className="font-semibold text-amber-500 mb-2">💡 Dica:</p>
-            <p>
-              {activeRole === "mestre"
-                ? "Como Mestre, você terá acesso à Tela do Mestre para desenhar mapas e gerenciar a sessão."
-                : activeRole === "jogador"
-                  ? "Como Jogador, você pode rolar dados, gerenciar seu personagem e visualizar o histórico de rolagens."
-                  : "Escolha um papel para começar!"}
-            </p>
-          </div>
+          {/* Role Info */}
+          {activeRole && activeRole !== "indefinido" && (
+            <div className="border-t border-slate-700 pt-6">
+              <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
+                <p className="text-sm text-slate-300">
+                  {activeRole === "mestre" && "👑 Como Mestre, você pode desenhar mapas, gerenciar a sessão e controlar o jogo."}
+                  {activeRole === "jogador" && "🛡️ Como Jogador, você pode rolar dados, gerenciar seu personagem e participar da aventura."}
+                  {activeRole === "espectador" && "👁️ Como Espectador, você pode ver o mapa do Mestre e acompanhar a sessão, mas não participa ativamente."}
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Session Info - Participants */}
+      {/* Participants */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-amber-500 font-serif flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Participantes da Sessão
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-amber-500" />
+            <span className="text-amber-500 font-serif">Participantes da Sessão</span>
           </CardTitle>
-          <CardDescription>
-            Jogadores e Mestre conectados nesta mesa
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {allUsers && allUsers.length > 0 ? (
-              allUsers.map((participant) => (
-                <div
-                  key={participant.userId}
-                  className={`p-3 rounded-lg border ${
-                    participant.role === "mestre"
-                      ? "bg-red-900 border-red-700"
-                      : "bg-blue-900 border-blue-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {participant.role === "mestre" ? (
-                        <Crown className="w-4 h-4 text-red-400" />
-                      ) : (
-                        <Sword className="w-4 h-4 text-blue-400" />
-                      )}
-                      <div>
-                        <p className="font-semibold text-slate-100">
-                          {participant.userName}
-                          {participant.userId === user?.id && " (Você)"}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {participant.role === "mestre" ? "👑 Mestre" : `⚔️ ${participant.characterName || "Sem personagem"}`}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      participant.role === "mestre"
-                        ? "bg-red-800 text-red-200"
-                        : "bg-blue-800 text-blue-200"
-                    }`}>
-                      {participant.role === "mestre" ? "MESTRE" : "JOGADOR"}
-                    </span>
+          {allUsers && allUsers.length > 0 ? (
+            <div className="space-y-2">
+              {allUsers.map((participant) => (
+                <div key={participant.id} className="p-3 bg-slate-700 rounded-lg border border-slate-600 flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-white">{participant.userName || "Desconhecido"}</p>
+                    <p className="text-sm text-slate-400">
+                      {participant.role === "mestre" && "👑 Mestre"}
+                      {participant.role === "jogador" && participant.characterName && `🛡️ ${participant.characterName}`}
+                      {participant.role === "jogador" && !participant.characterName && "🛡️ Jogador (sem personagem)"}
+                      {participant.role === "espectador" && "👁️ Espectador"}
+                      {participant.role === "indefinido" && "❓ Indefinido"}
+                    </p>
                   </div>
+                  {participant.role === "mestre" && <Crown className="h-5 w-5 text-red-500" />}
                 </div>
-              ))
-            ) : (
-              <p className="text-slate-400 text-sm">Nenhum participante conectado ainda.</p>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-slate-400 py-8">Nenhum participante ainda</p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -3,8 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 interface RPGContextType {
   activeCharacterId: number | null;
   setActiveCharacterId: (id: number | null) => void;
-  activeRole: "unassigned" | "mestre" | "jogador";
-  setActiveRole: (role: "unassigned" | "mestre" | "jogador") => void;
+  activeRole: "unassigned" | "mestre" | "jogador" | "espectador" | "indefinido";
+  setActiveRole: (role: "unassigned" | "mestre" | "jogador" | "espectador" | "indefinido") => void;
   activeMasterId: number | null;
   setActiveMasterId: (id: number | null) => void;
 }
@@ -17,7 +17,7 @@ export function RPGProvider({ children }: { children: React.ReactNode }) {
     return saved ? parseInt(saved) : null;
   });
 
-  const [activeRole, setActiveRole] = useState<"unassigned" | "mestre" | "jogador">(() => {
+  const [activeRole, setActiveRole] = useState<"unassigned" | "mestre" | "jogador" | "espectador" | "indefinido">(() => {
     const saved = localStorage.getItem("rpg_activeRole");
     return (saved as any) || "unassigned";
   });

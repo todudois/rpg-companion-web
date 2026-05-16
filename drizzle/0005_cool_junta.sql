@@ -1,0 +1,1 @@
+ALTER TABLE `sessionParticipants` MODIFY COLUMN `role` enum('mestre','jogador','espectador','indefinido') NOT NULL DEFAULT 'indefinido';

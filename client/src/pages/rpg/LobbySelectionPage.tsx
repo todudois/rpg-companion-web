@@ -1,12 +1,13 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { useRPG } from "@/contexts/RPGContext";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Lock, Users } from "lucide-react";
+import { Loader2, Lock, Users, Trash2, Copy } from "lucide-react";
 
 export default function LobbySelectionPage() {
   const { setActiveMasterId, setActiveRole } = useRPG();
@@ -16,10 +17,13 @@ export default function LobbySelectionPage() {
   const [joinPassword, setJoinPassword] = useState("");
   const [creatingLobby, setCreatingLobby] = useState(false);
   const [joiningLobby, setJoiningLobby] = useState(false);
+  const [activeTab, setActiveTab] = useState("publicos");
 
-  const { data: availableLobbys, isLoading: loadingLobbys } = trpc.rpg.lobby.getAvailable.useQuery();
+  const { data: availableLobbys, isLoading: loadingLobbys, refetch: refetchAvailable } = trpc.rpg.lobby.getAvailable.useQuery();
+  const { data: myLobbys, isLoading: loadingMyLobbys, refetch: refetchMyLobbys } = trpc.rpg.lobby.getMyLobbys.useQuery();
   const createLobbyMutation = trpc.rpg.lobby.create.useMutation();
   const joinLobbyMutation = trpc.rpg.lobby.join.useMutation();
+  const deleteLobbyMutation = trpc.rpg.lobby.delete.useMutation();
 
   const handleCreateLobby = async () => {
     if (!createName.trim()) {
@@ -43,6 +47,7 @@ export default function LobbySelectionPage() {
       setCreatePassword("");
       if (result?.id) setActiveMasterId(result.id);
       setActiveRole("mestre");
+      refetchMyLobbys();
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar lobby");
     } finally {
@@ -63,188 +68,202 @@ export default function LobbySelectionPage() {
     setJoiningLobby(true);
     try {
       const result = await joinLobbyMutation.mutateAsync({
-        accessCode: joinCode.toUpperCase(),
+        accessCode: joinCode,
         password: joinPassword,
       });
-
+      
       toast.success(`Entrou no lobby: ${result.name}`);
       setJoinCode("");
       setJoinPassword("");
-      setActiveMasterId(result.masterId);
-      setActiveRole("jogador");
+      setActiveMasterId(result.id);
+      setActiveRole("indefinido");
     } catch (error: any) {
-      if (error.message.includes("NOT_FOUND")) {
-        toast.error("Lobby não encontrado");
-      } else if (error.message.includes("FORBIDDEN")) {
-        toast.error("Senha incorreta ou lobby foi fechado");
-      } else {
-        toast.error(error.message || "Erro ao entrar no lobby");
-      }
+      toast.error(error.message || "Erro ao entrar no lobby");
     } finally {
       setJoiningLobby(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-amber-500 mb-2">RPG Companion</h1>
-          <p className="text-slate-300">Escolha um lobby para jogar</p>
-        </div>
+  const handleDeleteLobby = async (lobbyId: number) => {
+    if (!confirm("Tem certeza que deseja deletar este lobby?")) return;
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Criar Lobby */}
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-amber-500">Criar Novo Lobby</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-slate-400">Crie um novo lobby para seus amigos entrarem</p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full bg-amber-600 hover:bg-amber-700">
+    try {
+      await deleteLobbyMutation.mutateAsync({ lobbyId });
+      toast.success("Lobby deletado com sucesso");
+      refetchMyLobbys();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao deletar lobby");
+    }
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success("Código copiado!");
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-amber-500 font-serif">Seleção de Lobby</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-700">
+              <TabsTrigger value="publicos">Lobbys Públicos</TabsTrigger>
+              <TabsTrigger value="meus">Meus Lobbys</TabsTrigger>
+            </TabsList>
+
+            {/* Lobbys Públicos */}
+            <TabsContent value="publicos" className="space-y-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-amber-400">Entrar em um Lobby</h3>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Código do lobby"
+                    value={joinCode}
+                    onChange={(e) => setJoinCode(e.target.value)}
+                    className="bg-slate-700 border-slate-600"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Senha"
+                    value={joinPassword}
+                    onChange={(e) => setJoinPassword(e.target.value)}
+                    className="bg-slate-700 border-slate-600"
+                  />
+                  <Button
+                    onClick={handleJoinLobby}
+                    disabled={joiningLobby}
+                    className="w-full bg-amber-600 hover:bg-amber-700"
+                  >
+                    {joiningLobby ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Entrar no Lobby
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-700 pt-4">
+                <h3 className="text-sm font-medium text-amber-400 mb-3">Lobbys Disponíveis</h3>
+                {loadingLobbys ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                  </div>
+                ) : availableLobbys && availableLobbys.length > 0 ? (
+                  <div className="space-y-2">
+                    {availableLobbys.map((lobby) => (
+                      <Card key={lobby.id} className="bg-slate-700 border-slate-600">
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-white">{lobby.name}</p>
+                              <div className="flex items-center gap-2 text-sm text-slate-400 mt-1">
+                                <Users className="h-4 w-4" />
+                                <span>Mestre: {lobby.masterName || "Desconhecido"}</span>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setJoinCode(lobby.accessCode);
+                                setActiveTab("publicos");
+                              }}
+                              className="border-amber-600 text-amber-600 hover:bg-amber-600/10"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-slate-400 py-8">Nenhum lobby disponível</p>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Meus Lobbys */}
+            <TabsContent value="meus" className="space-y-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-amber-400">Criar Novo Lobby</h3>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Nome do lobby"
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    className="bg-slate-700 border-slate-600"
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Senha (mín. 4 caracteres)"
+                    value={createPassword}
+                    onChange={(e) => setCreatePassword(e.target.value)}
+                    className="bg-slate-700 border-slate-600"
+                  />
+                  <Button
+                    onClick={handleCreateLobby}
+                    disabled={creatingLobby}
+                    className="w-full bg-amber-600 hover:bg-amber-700"
+                  >
+                    {creatingLobby ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Criar Lobby
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-slate-800 border-slate-700">
-                  <DialogHeader>
-                    <DialogTitle className="text-amber-500">Criar Novo Lobby</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-slate-300">Nome do Lobby</label>
-                      <Input
-                        placeholder="Ex: Aventura do Dragão"
-                        value={createName}
-                        onChange={(e) => setCreateName(e.target.value)}
-                        className="bg-slate-700 border-slate-600 text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-slate-300">Senha</label>
-                      <Input
-                        type="password"
-                        placeholder="Mínimo 4 caracteres"
-                        value={createPassword}
-                        onChange={(e) => setCreatePassword(e.target.value)}
-                        className="bg-slate-700 border-slate-600 text-white"
-                      />
-                    </div>
-                    <Button
-                      onClick={handleCreateLobby}
-                      disabled={creatingLobby}
-                      className="w-full bg-amber-600 hover:bg-amber-700"
-                    >
-                      {creatingLobby && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Criar Lobby
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-
-          {/* Entrar em Lobby */}
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-amber-500">Entrar em Lobby</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-slate-400">Entre em um lobby usando o código compartilhado</p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Entrar em Lobby
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-slate-800 border-slate-700">
-                  <DialogHeader>
-                    <DialogTitle className="text-amber-500">Entrar em Lobby</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm text-slate-300">Código do Lobby</label>
-                      <Input
-                        placeholder="Ex: ABC123"
-                        value={joinCode}
-                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                        className="bg-slate-700 border-slate-600 text-white"
-                        maxLength={8}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-slate-300">Senha</label>
-                      <Input
-                        type="password"
-                        placeholder="Senha do lobby"
-                        value={joinPassword}
-                        onChange={(e) => setJoinPassword(e.target.value)}
-                        className="bg-slate-700 border-slate-600 text-white"
-                      />
-                    </div>
-                    <Button
-                      onClick={handleJoinLobby}
-                      disabled={joiningLobby}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      {joiningLobby && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Entrar
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Lobbys Disponíveis */}
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-amber-500 flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Lobbys Disponíveis
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingLobbys ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                </div>
               </div>
-            ) : availableLobbys && availableLobbys.length > 0 ? (
-              <div className="space-y-3">
-                {availableLobbys.map((lobby) => (
-                  <Card key={lobby.id} className="bg-slate-700 border-slate-600">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white">{lobby.name}</h3>
-                          <p className="text-sm text-slate-400">Mestre: {lobby.masterName || "Desconhecido"}</p>
-                          <p className="text-sm text-slate-400 flex items-center gap-1 mt-1">
-                            <Lock className="h-3 w-3" />
-                            Código: {lobby.accessCode}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setJoinCode(lobby.accessCode);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          Usar Código
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+              <div className="border-t border-slate-700 pt-4">
+                <h3 className="text-sm font-medium text-amber-400 mb-3">Seus Lobbys</h3>
+                {loadingMyLobbys ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                  </div>
+                ) : myLobbys && myLobbys.length > 0 ? (
+                  <div className="space-y-2">
+                    {myLobbys.map((lobby) => (
+                      <Card key={lobby.id} className="bg-slate-700 border-slate-600">
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-semibold text-white">{lobby.name}</p>
+                              <div className="flex items-center gap-2 text-sm text-slate-400 mt-1">
+                                <Lock className="h-4 w-4" />
+                                <span>Código: {lobby.accessCode}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setActiveMasterId(lobby.id);
+                                  setActiveRole("mestre");
+                                }}
+                                className="bg-amber-600 hover:bg-amber-700"
+                              >
+                                Entrar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteLobby(lobby.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-slate-400 py-8">Você ainda não criou nenhum lobby</p>
+                )}
               </div>
-            ) : (
-              <p className="text-center text-slate-400 py-8">Nenhum lobby disponível no momento</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

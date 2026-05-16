@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, sessionParticipants, lobbys, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData, SessionParticipant, InsertSessionParticipant, Lobby, InsertLobby } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -236,7 +236,7 @@ export async function upsertMasterCanvasData(userId: number, canvasData: string)
 
 
 // Session participant queries
-export async function upsertSessionParticipant(userId: number, lobbyId: number, characterId: number | null, role: "mestre" | "jogador") {
+export async function upsertSessionParticipant(userId: number, lobbyId: number, characterId: number | null, role: "mestre" | "jogador" | "espectador" | "indefinido") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
@@ -347,4 +347,25 @@ export async function closeLobby(id: number) {
   if (!db) return;
   
   return db.update(lobbys).set({ isActive: false }).where(eq(lobbys.id, id));
+}
+
+export async function deleteLobby(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  // Deletar participantes primeiro
+  await db.delete(sessionParticipants).where(eq(sessionParticipants.lobbyId, id));
+  
+  // Deletar lobby
+  return db.delete(lobbys).where(eq(lobbys.id, id));
+}
+
+export async function getMasterInLobby(lobbyId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(sessionParticipants)
+    .where(and(eq(sessionParticipants.lobbyId, lobbyId), eq(sessionParticipants.role, "mestre")));
+  
+  return result.length > 0 ? result[0] : null;
 }
