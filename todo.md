@@ -244,3 +244,10 @@
 - [x] Adicionar link de referência na página de login (Home.tsx)
 - [x] Colocar link em local visível para novos usuários
 - [x] Testar se link funciona corretamente
+
+
+## Correção de Erro NOT_FOUND (Novo)
+
+- [x] Investigar erro NOT_FOUND na página inicial
+- [x] Corrigir query rpg.attributes.get para retornar null em vez de lançar erro
+- [x] Adicionar validação em rpg.attributes.upsert

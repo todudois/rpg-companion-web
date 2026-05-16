@@ -135,9 +135,13 @@ export const rpgRouter = router({
     get: protectedProcedure
       .input(z.object({ characterId: z.number() }))
       .query(async ({ ctx, input }) => {
+        // Se characterId eh 0 ou negativo, retornar null (personagem nao vinculado)
+        if (input.characterId <= 0) {
+          return null;
+        }
         const character = await getCharacterById(input.characterId);
         if (!character) {
-          throw new TRPCError({ code: "NOT_FOUND" });
+          return null; // Retornar null em vez de lancar erro
         }
         if (character.userId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN" });
@@ -148,6 +152,10 @@ export const rpgRouter = router({
     upsert: protectedProcedure
       .input(z.object({ characterId: z.number(), data: attributeSchema }))
       .mutation(async ({ ctx, input }) => {
+        // Validar que characterId eh valido
+        if (input.characterId <= 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid character ID" });
+        }
         const character = await getCharacterById(input.characterId);
         if (!character) {
           throw new TRPCError({ code: "NOT_FOUND" });
