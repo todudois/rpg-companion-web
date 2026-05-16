@@ -3,9 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { useRPG } from "@/contexts/RPGContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users, Crown, Sword } from "lucide-react";
 
 const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7", "#f97316", "#ffffff", "#64748b"];
 
@@ -14,12 +15,17 @@ interface MasterScreenPageProps {
 }
 
 export default function MasterScreenPage({ readOnly = false }: MasterScreenPageProps) {
-  const { activeMasterId } = useRPG();
+  const { user } = useAuth();
+  const { activeMasterId, activeRole } = useRPG();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { data: savedCanvas, refetch } = trpc.rpg.masterCanvas.get.useQuery(
     { masterId: readOnly ? activeMasterId || undefined : undefined }
+  );
+  const { data: allUsers } = trpc.rpg.session.getUsers.useQuery(
+    { masterId: activeMasterId || user?.id || 0 },
+    { enabled: !!(activeMasterId || user?.id) }
   );
   const saveCanvasMutation = trpc.rpg.masterCanvas.save.useMutation();
 
@@ -298,27 +304,91 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         </CardContent>
       </Card>
 
-      <div
-        ref={containerRef}
-        className="w-full h-96 bg-slate-800 border-2 border-slate-700 rounded-lg overflow-hidden relative"
-      >
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
-            <Loader2 className="animate-spin w-8 h-8 text-amber-500" />
-          </div>
-        )}
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleMouseDown}
-          onTouchMove={handleMouseMove}
-          onTouchEnd={handleMouseUp}
-          className={`w-full h-full ${readOnly ? "cursor-default" : "cursor-crosshair"} touch-none`}
-          style={{ display: "block" }}
-        />
+      {/* Canvas com Painel Lateral */}
+      <div className="flex gap-4 h-[calc(100vh-400px)] min-h-96">
+        {/* Canvas Area */}
+        <div
+          ref={containerRef}
+          className="flex-1 bg-slate-800 border-2 border-slate-700 rounded-lg overflow-hidden relative"
+        >
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
+              <Loader2 className="animate-spin w-8 h-8 text-amber-500" />
+            </div>
+          )}
+          <canvas
+            ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleMouseDown}
+            onTouchMove={handleMouseMove}
+            onTouchEnd={handleMouseUp}
+            className={`w-full h-full ${readOnly ? "cursor-default" : "cursor-crosshair"} touch-none`}
+            style={{ display: "block" }}
+          />
+        </div>
+
+        {/* Participants Panel */}
+        <Card className="w-64 bg-slate-800 border-slate-700 flex flex-col">
+          <CardContent className="pt-4 flex flex-col h-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-amber-500" />
+              <h3 className="font-semibold text-slate-100">Participantes</h3>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {allUsers && allUsers.length > 0 ? (
+                allUsers.map((participant) => (
+                  <div
+                    key={participant.userId}
+                    className={`p-2 rounded border text-sm ${
+                      participant.role === "mestre"
+                        ? "bg-red-900 border-red-700"
+                        : "bg-blue-900 border-blue-700"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      {participant.role === "mestre" ? (
+                        <Crown className="w-4 h-4 text-red-400" />
+                      ) : (
+                        <Sword className="w-4 h-4 text-blue-400" />
+                      )}
+                      <span className="font-semibold text-slate-100 truncate">
+                        {participant.userName}
+                        {participant.userId === user?.id && " (Você)"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 ml-6">
+                      {participant.role === "mestre"
+                        ? "👑 Mestre"
+                        : `⚔️ ${participant.characterName || "Sem personagem"}`}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-slate-400 text-xs">Nenhum participante conectado.</p>
+              )}
+            </div>
+
+            {/* Status Info */}
+            <div className="mt-4 pt-4 border-t border-slate-700">
+              <div className="text-xs text-slate-400 space-y-1">
+                <p>
+                  <span className="font-semibold text-slate-300">Seu papel:</span>
+                </p>
+                <p className={`px-2 py-1 rounded text-center font-semibold ${
+                  activeRole === "mestre"
+                    ? "bg-red-900 text-red-200"
+                    : "bg-blue-900 text-blue-200"
+                }`}>
+                  {activeRole === "mestre" ? "👑 MESTRE" : "⚔️ JOGADOR"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {readOnly && (

@@ -169,3 +169,35 @@ export const masterCanvasDataRelations = relations(masterCanvasData, ({ one }) =
     references: [users.id],
   }),
 }));
+
+
+/**
+ * Session participants - tracks who is in a session and their role/character
+ */
+export const sessionParticipants = mysqlTable("sessionParticipants", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  masterId: int("masterId").notNull(),
+  characterId: int("characterId"),
+  role: mysqlEnum("role", ["mestre", "jogador"]).notNull(),
+  lastActiveAt: timestamp("lastActiveAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SessionParticipant = typeof sessionParticipants.$inferSelect;
+export type InsertSessionParticipant = typeof sessionParticipants.$inferInsert;
+
+export const sessionParticipantsRelations = relations(sessionParticipants, ({ one }) => ({
+  user: one(users, {
+    fields: [sessionParticipants.userId],
+    references: [users.id],
+  }),
+  master: one(users, {
+    fields: [sessionParticipants.masterId],
+    references: [users.id],
+  }),
+  character: one(characters, {
+    fields: [sessionParticipants.characterId],
+    references: [characters.id],
+  }),
+}));

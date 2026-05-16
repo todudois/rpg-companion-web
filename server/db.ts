@@ -1,6 +1,6 @@
 import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData } from "../drizzle/schema";
+import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, sessionParticipants, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData, SessionParticipant, InsertSessionParticipant } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -232,4 +232,52 @@ export async function upsertMasterCanvasData(userId: number, canvasData: string)
       canvasData,
     });
   }
+}
+
+
+// Session participant queries
+export async function upsertSessionParticipant(userId: number, masterId: number, characterId: number | null, role: "mestre" | "jogador") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await db.select().from(sessionParticipants)
+    .where(eq(sessionParticipants.userId, userId));
+  
+  if (existing.length > 0) {
+    return db.update(sessionParticipants)
+      .set({ masterId, characterId, role })
+      .where(eq(sessionParticipants.userId, userId));
+  } else {
+    return db.insert(sessionParticipants).values({
+      userId,
+      masterId,
+      characterId,
+      role,
+    });
+  }
+}
+
+export async function getSessionParticipants(masterId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select({
+    id: sessionParticipants.id,
+    userId: sessionParticipants.userId,
+    characterId: sessionParticipants.characterId,
+    role: sessionParticipants.role,
+    userName: users.name,
+    characterName: characters.name,
+  })
+    .from(sessionParticipants)
+    .leftJoin(users, eq(sessionParticipants.userId, users.id))
+    .leftJoin(characters, eq(sessionParticipants.characterId, characters.id))
+    .where(eq(sessionParticipants.masterId, masterId));
+}
+
+export async function removeSessionParticipant(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  return db.delete(sessionParticipants).where(eq(sessionParticipants.userId, userId));
 }

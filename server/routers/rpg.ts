@@ -16,6 +16,9 @@ import {
   getDiceRollsByUserId,
   getMasterCanvasData,
   upsertMasterCanvasData,
+  upsertSessionParticipant,
+  getSessionParticipants,
+  removeSessionParticipant,
 } from "../db";
 
 const characterSchema = z.object({
@@ -181,9 +184,9 @@ export const rpgRouter = router({
   // Dice rolls procedures
   diceRolls: router({
     list: protectedProcedure
-      .input(z.object({ limit: z.number().int().min(1).max(100).default(50) }))
+      .input(z.object({ limit: z.number().int().min(1).max(100).default(50) }).optional())
       .query(async ({ ctx, input }) => {
-        return getDiceRollsByUserId(ctx.user.id, input.limit);
+        return getDiceRollsByUserId(ctx.user.id, input?.limit || 50);
       }),
 
     create: protectedProcedure
@@ -219,5 +222,23 @@ export const rpgRouter = router({
         // Only the user can save their own canvas
         return upsertMasterCanvasData(ctx.user.id, input.canvasData);
       }),
+  }),
+
+  session: router({
+    join: protectedProcedure
+      .input(z.object({ masterId: z.number(), characterId: z.number().optional(), role: z.enum(["mestre", "jogador"]) }))
+      .mutation(async ({ ctx, input }) => {
+        return upsertSessionParticipant(ctx.user.id, input.masterId, input.characterId || null, input.role);
+      }),
+
+    getUsers: protectedProcedure
+      .input(z.object({ masterId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return getSessionParticipants(input.masterId);
+      }),
+
+    leave: protectedProcedure.mutation(async ({ ctx }) => {
+      return removeSessionParticipant(ctx.user.id);
+    }),
   }),
 });

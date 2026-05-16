@@ -83,3 +83,26 @@
 - [x] Mostrar aba Personagens quando role é Jogador
 - [x] Manter personagens salvos ao trocar de role
 - [x] Restaurar aba ao voltar para Jogador
+
+## Novos Requisitos - Multiplayer e UI Responsiva
+
+### Painel de Lobby
+- [x] Exibir lista de jogadores online no lobby
+- [x] Mostrar personagem escolhido de cada jogador
+- [x] Destacar quem é o Mestre
+- [x] Atualizar lista em tempo real
+- [x] Implementar backend de sessão com tabela sessionParticipants
+- [x] Criar procedures tRPC para join/leave/getUsers
+
+### Painel Lateral no Canvas
+- [x] Criar painel lateral mostrando participantes
+- [x] Exibir personagem e status de cada participante
+- [x] Mostrar quem é o Mestre no painel
+- [x] Manter painel visível ao lado do canvas
+- [x] Integrar dados reais de sessão
+
+### Canvas Responsivo
+- [x] Expandir canvas para aproveitar espaço vertical
+- [x] Ajustar tamanho do canvas conforme resolução da tela
+- [x] Manter proporção e usabilidade em diferentes dispositivos
+- [x] Otimizar layout para desktop (computador)

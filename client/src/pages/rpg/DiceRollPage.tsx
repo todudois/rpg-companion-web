@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useRPG } from "@/contexts/RPGContext";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -30,9 +31,10 @@ export default function DiceRollPage() {
   const [lastRoll, setLastRoll] = useState<any>(null);
   const [characterAttributes, setCharacterAttributes] = useState<any>(null);
 
+  const { activeMasterId } = useRPG();
   const utils = trpc.useUtils();
   const { data: characters } = trpc.rpg.characters.list.useQuery();
-  const { data: diceHistory } = trpc.rpg.diceRolls.list.useQuery({ limit: 50 });
+  const { data: diceHistory } = trpc.rpg.diceRolls.list.useQuery();
   const createRollMutation = trpc.rpg.diceRolls.create.useMutation();
   const { data: attributesData } = trpc.rpg.attributes.get.useQuery(
     { characterId: parseInt(selectedCharacterId) },
