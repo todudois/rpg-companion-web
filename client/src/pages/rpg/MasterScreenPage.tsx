@@ -439,6 +439,18 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                 >
                   Limpar
                 </button>
+                {selectedImageId && (
+                  <button
+                    onClick={() => {
+                      setDrawableImages(drawableImages.filter(img => img.id !== selectedImageId));
+                      setSelectedImageId(null);
+                      toast.success("Imagem deletada!");
+                    }}
+                    className="px-3 py-2 rounded text-sm font-medium border border-red-600 text-red-400 hover:bg-red-900 transition-colors flex-shrink-0"
+                  >
+                    🗑️ Deletar Imagem
+                  </button>
+                )}
                 <button
                   onClick={handleSaveCanvas}
                   disabled={saveCanvasMutation.isPending}

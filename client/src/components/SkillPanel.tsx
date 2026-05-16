@@ -33,7 +33,7 @@ export function SkillPanel({ skills }: SkillPanelProps) {
         return (
           <div
             key={skill.id}
-            onClick={() => setExpandedId(isExpanded ? null : skill.id)}
+            onClick={() => setExpandedId(isExpanded ? null : (skill.id || 0))}
             className="bg-slate-800 border border-slate-700 rounded-lg p-3 cursor-pointer transition-colors hover:border-slate-600"
             style={{
               borderColor: isExpanded ? skillType.color : undefined,

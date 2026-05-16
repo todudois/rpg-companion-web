@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useRouter } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2, Edit2 } from "lucide-react";
+import { Loader2, Trash2, Edit2, ChevronDown } from "lucide-react";
 import { SkillEditor, type Skill } from "@/components/SkillEditor";
 import { SkillPanel } from "@/components/SkillPanel";
 
@@ -52,8 +53,10 @@ interface CharacterWithAttributes {
 }
 
 export default function CharactersPage() {
+  const [, navigate] = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState({
     name: "",
     classe: "",
@@ -140,7 +143,6 @@ export default function CharactersPage() {
         ...character,
         vigorType: character.vigorType || "vigor",
       });
-      // useEffect vai carregar os atributos e habilidades quando os dados chegarem
     } else {
       setEditingId(null);
       setFormData({
@@ -202,18 +204,23 @@ export default function CharactersPage() {
         });
 
         // Salvar habilidades
-        // Deletar habilidades antigas
         const existingSkills = await utils.rpg.skills.list.fetch({ characterId });
         for (const skill of existingSkills || []) {
           await deleteSkillMutation.mutateAsync({ id: skill.id });
         }
-        // Criar novas habilidades
         for (const skill of skills) {
           if (skill.name.trim()) {
             const { id, ...skillData } = skill;
             await createSkillMutation.mutateAsync({
               characterId,
-              data: skillData,
+              data: {
+                name: skillData.name,
+                type: skillData.type || "passiva",
+                cost: skillData.cost || undefined,
+                damage: skillData.damage || undefined,
+                cooldown: skillData.cooldown || undefined,
+                description: skillData.description || undefined,
+              },
             });
           }
         }
@@ -238,6 +245,16 @@ export default function CharactersPage() {
     } catch (error) {
       toast.error("Erro ao deletar personagem");
     }
+  };
+
+  const toggleCardExpanded = (id: number) => {
+    const newSet = new Set(expandedCards);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setExpandedCards(newSet);
   };
 
   if (isLoading) {
@@ -386,37 +403,39 @@ export default function CharactersPage() {
               </TabsContent>
 
               <TabsContent value="atributos" className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto">
-                <p className="text-xs sm:text-sm text-slate-400 mb-3">Defina os bônus de atributos do personagem:</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
-                  {ATTRIBUTES.map((attr) => (
-                    <div key={attr.key}>
-                      <Label className="text-slate-300 text-xs sm:text-sm">{attr.short}</Label>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Button
-                          onClick={() => setAttributes({ ...attributes, [attr.key]: Math.max(-10, attributes[attr.key as keyof typeof attributes] - 1) })}
-                          variant="outline"
-                          size="sm"
-                          className="border-slate-600 text-slate-300 w-7 h-7 sm:w-8 sm:h-8 p-0 text-xs"
-                        >
-                          −
-                        </Button>
-                        <Input
-                          type="number"
-                          value={attributes[attr.key as keyof typeof attributes]}
-                          onChange={(e) => setAttributes({ ...attributes, [attr.key]: parseInt(e.target.value) || 0 })}
-                          className="bg-slate-700 border-slate-600 text-slate-100 text-center text-xs w-10"
-                        />
-                        <Button
-                          onClick={() => setAttributes({ ...attributes, [attr.key]: Math.min(10, attributes[attr.key as keyof typeof attributes] + 1) })}
-                          variant="outline"
-                          size="sm"
-                          className="border-slate-600 text-slate-300 w-7 h-7 sm:w-8 sm:h-8 p-0 text-xs"
-                        >
-                          +
-                        </Button>
+                <p className="text-xs sm:text-sm text-slate-400 mb-4">Defina os bônus de atributos do personagem:</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {ATTRIBUTES.map((attr) => {
+                    const value = attributes[attr.key as keyof typeof attributes];
+                    return (
+                      <div key={attr.key} className="bg-slate-700 rounded p-3 space-y-2">
+                        <Label className="text-slate-300 text-sm font-semibold block">{attr.label}</Label>
+                        <div className="flex items-center justify-between gap-2">
+                          <Button
+                            onClick={() => setAttributes({ ...attributes, [attr.key]: Math.max(-10, value - 1) })}
+                            variant="outline"
+                            size="sm"
+                            className="border-slate-600 text-slate-300 hover:bg-slate-600 flex-1 h-10 text-lg font-bold"
+                          >
+                            −
+                          </Button>
+                          <div className="flex-1 text-center">
+                            <p className={`text-2xl font-bold ${getAttributeColor(value)}`}>
+                              {value > 0 ? "+" : ""}{value}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => setAttributes({ ...attributes, [attr.key]: Math.min(10, value + 1) })}
+                            variant="outline"
+                            size="sm"
+                            className="border-slate-600 text-slate-300 hover:bg-slate-600 flex-1 h-10 text-lg font-bold"
+                          >
+                            +
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </TabsContent>
             </Tabs>
@@ -445,7 +464,7 @@ export default function CharactersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {charactersWithAttributes.map(({ character, attributes: charAttrs }) => {
           const classColor = getClassColor(character.classe);
-          const firstAttrs = ATTRIBUTES.slice(0, 4);
+          const isExpanded = expandedCards.has(character.id);
 
           return (
             <div
@@ -454,7 +473,7 @@ export default function CharactersPage() {
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate(`/personagem/${character.id}`)}>
                   <h3 className={`font-bold text-sm sm:text-base ${classColor.text} truncate`}>{character.name}</h3>
                   <p className="text-xs text-slate-400 truncate">
                     Nv.{character.nivel} {character.classe} • {character.raca}
@@ -513,20 +532,31 @@ export default function CharactersPage() {
                 </div>
               </div>
 
-              {/* Attributes Preview */}
-              <div className="grid grid-cols-4 gap-1">
-                {firstAttrs.map((attr) => {
-                  const value = charAttrs?.[attr.key as keyof typeof charAttrs] || 0;
-                  return (
-                    <div key={attr.key} className="bg-slate-700 rounded p-1 text-center">
-                      <p className="text-xs text-slate-400">{attr.short}</p>
-                      <p className={`font-bold text-xs ${getAttributeColor(value)}`}>
-                        {value > 0 ? "+" : ""}
-                        {value}
-                      </p>
-                    </div>
-                  );
-                })}
+              {/* Attributes - Collapsible */}
+              <div className="border-t border-slate-700 pt-2">
+                <button
+                  onClick={() => toggleCardExpanded(character.id)}
+                  className="flex items-center justify-between w-full text-xs text-slate-400 hover:text-slate-300 transition-colors"
+                >
+                  <span className="font-semibold">Atributos</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                </button>
+
+                {isExpanded && (
+                  <div className="grid grid-cols-3 gap-1 mt-2">
+                    {ATTRIBUTES.map((attr) => {
+                      const value = charAttrs?.[attr.key as keyof typeof charAttrs] || 0;
+                      return (
+                        <div key={attr.key} className="bg-slate-600 rounded p-1.5 text-center">
+                          <p className="text-xs text-slate-400">{attr.short}</p>
+                          <p className={`font-bold text-xs ${getAttributeColor(value)}`}>
+                            {value > 0 ? "+" : ""}{value}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -51,13 +51,15 @@ export function SkillEditor({
     onChange([...skills, newSkill]);
   };
 
-  const updateSkill = (id: number, field: keyof Skill, value: any) => {
+  const updateSkill = (id: number | undefined, field: string, value: string) => {
+    if (!id) return;
     onChange(
       skills.map((s) => (s.id === id ? { ...s, [field]: value } : s))
     );
   };
 
-  const deleteSkill = (id: number) => {
+  const deleteSkill = (id: number | undefined) => {
+    if (!id) return;
     onChange(skills.filter((s) => s.id !== id));
   };
 
@@ -140,7 +142,7 @@ export function SkillEditor({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => deleteSkill(skill.id)}
+                  onClick={() => skill.id && deleteSkill(skill.id)}
                   className="text-red-400 hover:bg-red-950"
                 >
                   ×

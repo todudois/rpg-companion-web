@@ -205,3 +205,12 @@
 - [x] Corrigir visualização e salvamento de bônus de atributos
 - [x] Adicionar opção de escolher entre Vigor ou Mana
 - [x] Criar tela de visualização de habilidades do personagem
+
+
+## Melhorias Finais (Novo Foco)
+
+- [x] Corrigir UI do editor de atributos (remover spinner, aumentar tamanho)
+- [x] Mostrar todos os 9 atributos nos cards de personagens
+- [x] Implementar Vigor/Mana corretamente nos cards
+- [x] Adicionar botão Delete para imagens no canvas
+- [x] Criar página de detalhes do personagem com habilidades
