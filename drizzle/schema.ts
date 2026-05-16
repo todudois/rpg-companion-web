@@ -1,4 +1,5 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean, decimal } from "drizzle-orm/mysql-core";
+import { relations } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -25,4 +26,146 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Characters table - stores all player characters
+ */
+export const characters = mysqlTable("characters", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  classe: varchar("classe", { length: 255 }).notNull(),
+  raca: varchar("raca", { length: 255 }).notNull(),
+  nivel: int("nivel").default(1).notNull(),
+  hp: int("hp").default(10).notNull(),
+  hpMax: int("hpMax").default(10).notNull(),
+  vigor: int("vigor").default(0).notNull(),
+  vigorMax: int("vigorMax").default(0).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Character = typeof characters.$inferSelect;
+export type InsertCharacter = typeof characters.$inferInsert;
+
+/**
+ * Character attributes - stores bonuses for each character
+ */
+export const characterAttributes = mysqlTable("characterAttributes", {
+  id: int("id").autoincrement().primaryKey(),
+  characterId: int("characterId").notNull(),
+  for: int("for").default(0).notNull(), // Força
+  des: int("des").default(0).notNull(), // Destreza
+  con: int("con").default(0).notNull(), // Constituição
+  int: int("int").default(0).notNull(), // Inteligência
+  sab: int("sab").default(0).notNull(), // Sabedoria
+  car: int("car").default(0).notNull(), // Carisma
+  sob: int("sob").default(0).notNull(), // Sobrevivência
+  sor: int("sor").default(0).notNull(), // Sorte
+  fe: int("fe").default(0).notNull(), // Fé
+});
+
+export type CharacterAttribute = typeof characterAttributes.$inferSelect;
+export type InsertCharacterAttribute = typeof characterAttributes.$inferInsert;
+
+/**
+ * Character skills - stores abilities for each character
+ */
+export const characterSkills = mysqlTable("characterSkills", {
+  id: int("id").autoincrement().primaryKey(),
+  characterId: int("characterId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  cost: int("cost").default(0).notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CharacterSkill = typeof characterSkills.$inferSelect;
+export type InsertCharacterSkill = typeof characterSkills.$inferInsert;
+
+/**
+ * Dice rolls history - stores all dice rolls for persistence
+ */
+export const diceRolls = mysqlTable("diceRolls", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  characterId: int("characterId"),
+  numDice: int("numDice").notNull(),
+  diceType: int("diceType").notNull(),
+  pureResults: json("pureResults").$type<number[]>().notNull(),
+  totalUnitBonus: int("totalUnitBonus").default(0).notNull(),
+  total: int("total").notNull(),
+  attributeKey: varchar("attributeKey", { length: 64 }),
+  isCrit: boolean("isCrit").default(false).notNull(),
+  isFail: boolean("isFail").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DiceRoll = typeof diceRolls.$inferSelect;
+export type InsertDiceRoll = typeof diceRolls.$inferInsert;
+
+/**
+ * Master canvas data - stores drawing data for the master's screen
+ */
+export const masterCanvasData = mysqlTable("masterCanvasData", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  canvasData: text("canvasData").notNull(), // Base64 encoded canvas image
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MasterCanvasData = typeof masterCanvasData.$inferSelect;
+export type InsertMasterCanvasData = typeof masterCanvasData.$inferInsert;
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  characters: many(characters),
+  diceRolls: many(diceRolls),
+  masterCanvasData: many(masterCanvasData),
+}));
+
+export const charactersRelations = relations(characters, ({ one, many }) => ({
+  user: one(users, {
+    fields: [characters.userId],
+    references: [users.id],
+  }),
+  attributes: one(characterAttributes, {
+    fields: [characters.id],
+    references: [characterAttributes.characterId],
+  }),
+  skills: many(characterSkills),
+  diceRolls: many(diceRolls),
+}));
+
+export const characterAttributesRelations = relations(characterAttributes, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterAttributes.characterId],
+    references: [characters.id],
+  }),
+}));
+
+export const characterSkillsRelations = relations(characterSkills, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterSkills.characterId],
+    references: [characters.id],
+  }),
+}));
+
+export const diceRollsRelations = relations(diceRolls, ({ one }) => ({
+  user: one(users, {
+    fields: [diceRolls.userId],
+    references: [users.id],
+  }),
+  character: one(characters, {
+    fields: [diceRolls.characterId],
+    references: [characters.id],
+  }),
+}));
+
+export const masterCanvasDataRelations = relations(masterCanvasData, ({ one }) => ({
+  user: one(users, {
+    fields: [masterCanvasData.userId],
+    references: [users.id],
+  }),
+}));

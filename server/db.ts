@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,145 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Character queries
+export async function createCharacter(userId: number, data: Omit<InsertCharacter, 'userId'>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(characters).values({
+    ...data,
+    userId,
+  });
+  
+  return result;
+}
+
+export async function getCharactersByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(characters).where(eq(characters.userId, userId));
+}
+
+export async function getCharacterById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(characters).where(eq(characters.id, id));
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateCharacter(id: number, data: Partial<InsertCharacter>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.update(characters).set(data).where(eq(characters.id, id));
+}
+
+export async function deleteCharacter(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Delete related data first
+  await db.delete(characterAttributes).where(eq(characterAttributes.characterId, id));
+  await db.delete(characterSkills).where(eq(characterSkills.characterId, id));
+  await db.delete(diceRolls).where(eq(diceRolls.characterId, id));
+  
+  return db.delete(characters).where(eq(characters.id, id));
+}
+
+// Character attributes queries
+export async function getCharacterAttributes(characterId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(characterAttributes).where(eq(characterAttributes.characterId, characterId));
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function upsertCharacterAttributes(characterId: number, data: Omit<InsertCharacterAttribute, 'characterId'>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getCharacterAttributes(characterId);
+  
+  if (existing) {
+    return db.update(characterAttributes).set(data).where(eq(characterAttributes.characterId, characterId));
+  } else {
+    return db.insert(characterAttributes).values({
+      ...data,
+      characterId,
+    });
+  }
+}
+
+// Character skills queries
+export async function getCharacterSkills(characterId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(characterSkills).where(eq(characterSkills.characterId, characterId));
+}
+
+export async function createCharacterSkill(characterId: number, data: Omit<InsertCharacterSkill, 'characterId'>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.insert(characterSkills).values({
+    ...data,
+    characterId,
+  });
+}
+
+export async function deleteCharacterSkill(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.delete(characterSkills).where(eq(characterSkills.id, id));
+}
+
+// Dice rolls queries
+export async function createDiceRoll(userId: number, data: Omit<InsertDiceRoll, 'userId'>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.insert(diceRolls).values({
+    ...data,
+    userId,
+  });
+}
+
+export async function getDiceRollsByUserId(userId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(diceRolls)
+    .where(eq(diceRolls.userId, userId))
+    .orderBy(desc(diceRolls.createdAt))
+    .limit(limit);
+}
+
+// Master canvas queries
+export async function getMasterCanvasData(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(masterCanvasData).where(eq(masterCanvasData.userId, userId));
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function upsertMasterCanvasData(userId: number, canvasData: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getMasterCanvasData(userId);
+  
+  if (existing) {
+    return db.update(masterCanvasData).set({ canvasData }).where(eq(masterCanvasData.userId, userId));
+  } else {
+    return db.insert(masterCanvasData).values({
+      userId,
+      canvasData,
+    });
+  }
+}

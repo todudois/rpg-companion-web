@@ -1,0 +1,56 @@
+# RPG Companion Web - TODO
+
+## Banco de Dados e Backend
+- [x] Criar schema: tabelas de personagens, atributos, habilidades e histórico de rolagens
+- [x] Implementar procedures tRPC para CRUD de personagens
+- [x] Implementar procedures tRPC para rolagem de dados e histórico
+- [x] Implementar procedures tRPC para gerenciamento de canvas do Mestre
+- [x] Adicionar validação de ownership em todos os procedures
+
+## Autenticação
+- [x] Configurar OAuth Manus (já vem no template)
+- [x] Testar login e logout
+- [x] Implementar persistência de sessão
+
+## Gerenciamento de Personagens
+- [x] Criar página de personagens com listagem
+- [x] Implementar modal/formulário de criação de personagem
+- [x] Implementar modal/formulário de edição de personagem
+- [x] Implementar exclusão de personagem
+- [x] Validar campos obrigatórios (nome, classe, raça, etc)
+- [x] Testar persistência em banco de dados
+
+## Sistema de Rolagem de Dados
+- [x] Criar interface de seleção de tipo de dado (d4-d100)
+- [x] Implementar lógica de rolagem com animação
+- [x] Implementar aplicação de bônus de atributos
+- [x] Implementar detecção de críticos (d20=20) e falhas (d20=1)
+- [x] Criar histórico de rolagens persistido
+- [x] Implementar visualização do histórico
+
+## Tela do Mestre
+- [x] Criar canvas interativo para desenho
+- [x] Implementar ferramentas: caneta, borracha
+- [x] Implementar paleta de cores
+- [x] Implementar upload de imagens como fundo
+- [x] Implementar limpeza de canvas
+- [x] Implementar persistência do desenho
+
+## Interface de Jogador
+- [x] Criar sistema de abas (Lobby, Dados, Personagens, Tela do Mestre)
+- [x] Implementar seleção de role (Mestre/Jogador)
+- [x] Implementar seleção de personagem ativo
+- [x] Criar painel de status do personagem (HP, Vigor)
+- [x] Implementar modal de detalhes de habilidades
+- [x] Implementar visibilidade condicional de abas por role
+
+## Testes e Qualidade
+- [x] Escrever testes vitest para procedures tRPC
+- [x] Testar fluxo completo de autenticação
+- [ ] Testar CRUD de personagens
+- [ ] Testar rolagem de dados
+- [ ] Validar persistência em banco de dados
+
+## Publicação
+- [ ] Criar checkpoint final
+- [ ] Publicar site

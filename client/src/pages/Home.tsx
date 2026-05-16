@@ -1,30 +1,131 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRPG } from "@/contexts/RPGContext";
 import { getLoginUrl } from "@/const";
-import { Streamdown } from 'streamdown';
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import LobbyPage from "./rpg/LobbyPage";
+import DiceRollPage from "./rpg/DiceRollPage";
+import CharactersPage from "./rpg/CharactersPage";
+import MasterScreenPage from "./rpg/MasterScreenPage";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useAuth();
+  const { activeRole, setActiveRole, activeCharacterId } = useRPG();
+  const [activeTab, setActiveTab] = useState("lobby");
 
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin w-8 h-8 text-amber-500" />
+          <p className="text-slate-300">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="max-w-md w-full mx-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 text-center">
+            <div className="text-4xl mb-4">🎲</div>
+            <h1 className="text-3xl font-bold text-amber-500 mb-2 font-serif">RPG Companion</h1>
+            <p className="text-slate-300 mb-8">Mesa Digital para Mestres e Jogadores</p>
+            <Button
+              onClick={() => (window.location.href = getLoginUrl())}
+              className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+              size="lg"
+            >
+              Fazer Login com Manus
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
+    <div className="min-h-screen bg-slate-900 text-slate-100">
+      {/* Header */}
+      <header className="bg-slate-800 border-b-2 border-amber-500 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎲</span>
+            <h1 className="text-2xl font-bold text-amber-500 font-serif">RPG Companion</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            {activeRole !== "unassigned" && (
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    activeRole === "mestre"
+                      ? "bg-red-900 text-red-200"
+                      : "bg-blue-900 text-blue-200"
+                  }`}
+                >
+                  {activeRole === "mestre" ? "👑 MESTRE" : "⚔️ JOGADOR"}
+                </span>
+                {activeCharacterId && activeRole === "jogador" && (
+                  <span className="text-xs text-slate-400">ID: {activeCharacterId}</span>
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-400">{user?.name}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={logout}
+                className="text-slate-300 border-slate-600 hover:bg-slate-700"
+              >
+                Sair
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-slate-800 border border-slate-700 mb-6">
+            <TabsTrigger value="lobby" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+              🏢 Lobby
+            </TabsTrigger>
+            <TabsTrigger value="dados" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+              🎲 Dados e Painel
+            </TabsTrigger>
+            <TabsTrigger value="personagens" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+              ⚔️ Personagens
+            </TabsTrigger>
+            {activeRole === "mestre" && (
+              <TabsTrigger value="mestre" className="data-[state=active]:bg-red-600 data-[state=active]:text-white">
+                🗺️ Tela do Mestre
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <TabsContent value="lobby" className="mt-0">
+            <LobbyPage />
+          </TabsContent>
+
+          <TabsContent value="dados" className="mt-0">
+            <DiceRollPage />
+          </TabsContent>
+
+          <TabsContent value="personagens" className="mt-0">
+            <CharactersPage />
+          </TabsContent>
+
+          {activeRole === "mestre" && (
+            <TabsContent value="mestre" className="mt-0">
+              <MasterScreenPage />
+            </TabsContent>
+          )}
+        </Tabs>
       </main>
     </div>
   );
