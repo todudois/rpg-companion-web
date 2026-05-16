@@ -222,3 +222,11 @@
 - [x] Colocar número de dados e bônus na mesma linha (cell layout)
 - [x] Reduzir altura do container de tipo de dano
 - [x] Reorganizar página: personagem no topo com atributos, habilidades expansíveis embaixo
+
+
+## Correções de DiceRollPage (Novo Foco)
+
+- [x] Apagar histórico de dados antigos (1d20 com resultado 15)
+- [x] Usar personagem vinculado do lobby em vez de seletor
+- [x] Adicionar opção "Nenhum personagem" ao vincular
+- [x] Mostrar aba de dados só quando personagem vinculado (exceto mestre)

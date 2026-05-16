@@ -95,11 +95,14 @@ export default function LobbyPage() {
           {activeRole === "jogador" && (
             <div className="border-t border-slate-700 pt-4 sm:pt-6">
               <h3 className="text-base sm:text-lg font-semibold mb-3 text-slate-200">Vincular seu personagem:</h3>
-              <Select value={activeCharacterId?.toString() || ""} onValueChange={(val) => setActiveCharacterId(val ? parseInt(val) : null)}>
+              <Select value={activeCharacterId?.toString() || "none"} onValueChange={(val) => setActiveCharacterId(val !== "none" ? parseInt(val) : null)}>
                 <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100 w-full text-sm">
                   <SelectValue placeholder="Selecione um personagem" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
+                  <SelectItem value="none" className="text-sm text-slate-400">
+                    Nenhum personagem
+                  </SelectItem>
                   {characters?.map((char) => (
                     <SelectItem key={char.id} value={char.id.toString()} className="text-sm">
                       {char.name} (Nv. {char.nivel} - {char.classe})

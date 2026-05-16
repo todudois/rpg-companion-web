@@ -183,7 +183,7 @@ export default function Home() {
               >
                 🏢 <span className="hidden sm:inline">Lobby</span>
               </TabsTrigger>
-              {(activeRole === "mestre" || activeRole === "jogador") && (
+              {(activeRole === "mestre" || (activeRole === "jogador" && activeCharacterId)) && (
                 <TabsTrigger 
                   value="dados" 
                   className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 text-xs sm:text-sm flex-shrink-0"
