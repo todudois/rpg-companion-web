@@ -52,8 +52,8 @@
 - [x] Validar persistência em banco de dados
 
 ## Publicação
-- [ ] Criar checkpoint final
-- [ ] Publicar site
+- [x] Criar checkpoint final
+- [x] Publicar site (pronto para publicar via Management UI)
 
 ## Novos Requisitos (Adicionados pelo Usuário)
 
@@ -70,3 +70,16 @@
 - [x] Sincronizar canvas entre múltiplos usuários
 - [x] Integrar masterId no contexto RPG
 - [x] Adicionar suporte a masterId nos procedures tRPC
+
+## Refinamentos Solicitados pelo Usuário
+
+### Atributos na Criação
+- [x] Mover campos de atributos para modal de criação de personagem
+- [x] Remover página separada de atributos
+- [x] Adicionar botão "Editar" em cada personagem para editar atributos
+
+### Visibilidade da Aba Personagens
+- [x] Ocultar aba Personagens quando role é Mestre
+- [x] Mostrar aba Personagens quando role é Jogador
+- [x] Manter personagens salvos ao trocar de role
+- [x] Restaurar aba ao voltar para Jogador

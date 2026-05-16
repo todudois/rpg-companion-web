@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2, Edit2 } from "lucide-react";
 
@@ -22,12 +23,6 @@ const ATTRIBUTES = [
 ];
 
 export default function CharactersPage() {
-  const utils = trpc.useUtils();
-  const { data: characters, isLoading } = trpc.rpg.characters.list.useQuery();
-  const createCharMutation = trpc.rpg.characters.create.useMutation();
-  const updateCharMutation = trpc.rpg.characters.update.useMutation();
-  const deleteCharMutation = trpc.rpg.characters.delete.useMutation();
-
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -42,10 +37,41 @@ export default function CharactersPage() {
     notes: "",
   });
 
+  const [attributes, setAttributes] = useState({
+    for: 0,
+    des: 0,
+    con: 0,
+    int: 0,
+    sab: 0,
+    car: 0,
+    sob: 0,
+    sor: 0,
+    fe: 0,
+  });
+
+  const utils = trpc.useUtils();
+  const { data: characters, isLoading } = trpc.rpg.characters.list.useQuery();
+  const createCharMutation = trpc.rpg.characters.create.useMutation();
+  const updateCharMutation = trpc.rpg.characters.update.useMutation();
+  const deleteCharMutation = trpc.rpg.characters.delete.useMutation();
+  const { data: attributesData } = trpc.rpg.attributes.get.useQuery(
+    { characterId: editingId || 0 },
+    { enabled: !!editingId }
+  );
+  const upsertAttributesMutation = trpc.rpg.attributes.upsert.useMutation();
+
+  // Carregar atributos quando attributesData chegar
+  useEffect(() => {
+    if (attributesData && editingId) {
+      setAttributes(attributesData);
+    }
+  }, [attributesData, editingId]);
+
   const handleOpenDialog = (character?: any) => {
     if (character) {
       setEditingId(character.id);
       setFormData(character);
+      // useEffect vai carregar os atributos quando attributesData chegar
     } else {
       setEditingId(null);
       setFormData({
@@ -59,6 +85,17 @@ export default function CharactersPage() {
         vigorMax: 0,
         notes: "",
       });
+      setAttributes({
+        for: 0,
+        des: 0,
+        con: 0,
+        int: 0,
+        sab: 0,
+        car: 0,
+        sob: 0,
+        sor: 0,
+        fe: 0,
+      });
     }
     setIsOpen(true);
   };
@@ -70,6 +107,8 @@ export default function CharactersPage() {
     }
 
     try {
+      let characterId = editingId;
+
       if (editingId) {
         await updateCharMutation.mutateAsync({
           id: editingId,
@@ -77,9 +116,20 @@ export default function CharactersPage() {
         });
         toast.success("Personagem atualizado!");
       } else {
-        await createCharMutation.mutateAsync(formData);
+        const result = await createCharMutation.mutateAsync(formData);
+        if (result) {
+          characterId = result.id;
+        }
         toast.success("Personagem criado!");
       }
+
+      if (characterId) {
+        await upsertAttributesMutation.mutateAsync({
+          characterId,
+          data: attributes,
+        });
+      }
+
       await utils.rpg.characters.list.invalidate();
       setIsOpen(false);
     } catch (error) {
@@ -123,95 +173,142 @@ export default function CharactersPage() {
                 {editingId ? "✏️ Editar Personagem" : "⚔️ Novo Personagem"}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              <div>
-                <Label className="text-slate-300">Nome *</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Nome do personagem"
-                  className="bg-slate-700 border-slate-600 text-slate-100"
-                />
-              </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-slate-300">Classe *</Label>
-                  <Input
-                    value={formData.classe}
-                    onChange={(e) => setFormData({ ...formData, classe: e.target.value })}
-                    placeholder="Ex: Guerreiro"
-                    className="bg-slate-700 border-slate-600 text-slate-100"
-                  />
-                </div>
-                <div>
-                  <Label className="text-slate-300">Raça *</Label>
-                  <Input
-                    value={formData.raca}
-                    onChange={(e) => setFormData({ ...formData, raca: e.target.value })}
-                    placeholder="Ex: Humano"
-                    className="bg-slate-700 border-slate-600 text-slate-100"
-                  />
-                </div>
-                <div>
-                  <Label className="text-slate-300">Nível</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.nivel}
-                    onChange={(e) => setFormData({ ...formData, nivel: parseInt(e.target.value) || 1 })}
-                    className="bg-slate-700 border-slate-600 text-slate-100"
-                  />
-                </div>
-              </div>
+            <Tabs defaultValue="basico" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-700">
+                <TabsTrigger value="basico" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+                  Básico
+                </TabsTrigger>
+                <TabsTrigger value="atributos" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+                  Atributos
+                </TabsTrigger>
+              </TabsList>
 
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { key: "hp", label: "❤️ Vida" },
-                  { key: "hpMax", label: "❤️ Vida Máx" },
-                  { key: "vigor", label: "⚡ Vigor" },
-                  { key: "vigorMax", label: "⚡ Vigor Máx" },
-                ].map(({ key, label }) => (
-                  <div key={key}>
-                    <Label className="text-slate-300 text-xs">{label}</Label>
+              <TabsContent value="basico" className="space-y-4 max-h-96 overflow-y-auto">
+                <div>
+                  <Label className="text-slate-300">Nome *</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Nome do personagem"
+                    className="bg-slate-700 border-slate-600 text-slate-100"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-slate-300">Classe *</Label>
                     <Input
-                      type="number"
-                      value={formData[key as keyof typeof formData]}
-                      onChange={(e) =>
-                        setFormData({ ...formData, [key]: parseInt(e.target.value) || 0 })
-                      }
+                      value={formData.classe}
+                      onChange={(e) => setFormData({ ...formData, classe: e.target.value })}
+                      placeholder="Ex: Guerreiro"
                       className="bg-slate-700 border-slate-600 text-slate-100"
                     />
                   </div>
-                ))}
-              </div>
+                  <div>
+                    <Label className="text-slate-300">Raça *</Label>
+                    <Input
+                      value={formData.raca}
+                      onChange={(e) => setFormData({ ...formData, raca: e.target.value })}
+                      placeholder="Ex: Humano"
+                      className="bg-slate-700 border-slate-600 text-slate-100"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Nível</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.nivel}
+                      onChange={(e) => setFormData({ ...formData, nivel: parseInt(e.target.value) || 1 })}
+                      className="bg-slate-700 border-slate-600 text-slate-100"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label className="text-slate-300">Anotações</Label>
-                <Textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Inventário, história, etc..."
-                  className="bg-slate-700 border-slate-600 text-slate-100 min-h-24"
-                />
-              </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { key: "hp", label: "❤️ Vida" },
+                    { key: "hpMax", label: "❤️ Vida Máx" },
+                    { key: "vigor", label: "⚡ Vigor" },
+                    { key: "vigorMax", label: "⚡ Vigor Máx" },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <Label className="text-slate-300 text-xs">{label}</Label>
+                      <Input
+                        type="number"
+                        value={formData[key as keyof typeof formData]}
+                        onChange={(e) =>
+                          setFormData({ ...formData, [key]: parseInt(e.target.value) || 0 })
+                        }
+                        className="bg-slate-700 border-slate-600 text-slate-100"
+                      />
+                    </div>
+                  ))}
+                </div>
 
-              <div className="flex gap-2 pt-4">
-                <Button
-                  onClick={handleSave}
-                  disabled={createCharMutation.isPending || updateCharMutation.isPending}
-                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900"
-                >
-                  💾 Salvar
-                </Button>
-                <Button
-                  onClick={() => setIsOpen(false)}
-                  variant="outline"
-                  className="flex-1 border-slate-600 text-slate-300"
-                >
-                  Cancelar
-                </Button>
-              </div>
+                <div>
+                  <Label className="text-slate-300">Anotações</Label>
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Inventário, história, etc..."
+                    className="bg-slate-700 border-slate-600 text-slate-100 min-h-24"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="atributos" className="space-y-4 max-h-96 overflow-y-auto">
+                <p className="text-sm text-slate-400 mb-4">Defina os bônus de atributos do personagem:</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {ATTRIBUTES.map((attr) => (
+                    <div key={attr.key}>
+                      <Label className="text-slate-300 text-sm">{attr.label}</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Button
+                          onClick={() => setAttributes({ ...attributes, [attr.key]: Math.max(-10, attributes[attr.key as keyof typeof attributes] - 1) })}
+                          variant="outline"
+                          size="sm"
+                          className="border-slate-600 text-slate-300 w-8 h-8 p-0"
+                        >
+                          −
+                        </Button>
+                        <Input
+                          type="number"
+                          value={attributes[attr.key as keyof typeof attributes]}
+                          onChange={(e) => setAttributes({ ...attributes, [attr.key]: parseInt(e.target.value) || 0 })}
+                          className="bg-slate-700 border-slate-600 text-slate-100 text-center"
+                        />
+                        <Button
+                          onClick={() => setAttributes({ ...attributes, [attr.key]: Math.min(10, attributes[attr.key as keyof typeof attributes] + 1) })}
+                          variant="outline"
+                          size="sm"
+                          className="border-slate-600 text-slate-300 w-8 h-8 p-0"
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                onClick={handleSave}
+                disabled={createCharMutation.isPending || updateCharMutation.isPending || upsertAttributesMutation.isPending}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900"
+              >
+                💾 Salvar
+              </Button>
+              <Button
+                onClick={() => setIsOpen(false)}
+                variant="outline"
+                className="flex-1 border-slate-600 text-slate-300"
+              >
+                Cancelar
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -273,13 +370,13 @@ export default function CharactersPage() {
         ))}
       </div>
 
-      {!characters || characters.length === 0 && (
+      {!characters || (characters.length === 0 && (
         <Card className="bg-slate-800 border-slate-700">
           <CardContent className="py-12 text-center text-slate-400">
             <p>Nenhum personagem criado ainda. Crie um novo personagem para começar!</p>
           </CardContent>
         </Card>
-      )}
+      ))}
     </div>
   );
 }

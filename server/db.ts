@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -94,12 +94,14 @@ export async function createCharacter(userId: number, data: Omit<InsertCharacter
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(characters).values({
+  await db.insert(characters).values({
     ...data,
     userId,
   });
   
-  return result;
+  // Fetch the created character to get its ID
+  const result = await db.select().from(characters).where(eq(characters.userId, userId)).orderBy(desc(characters.id)).limit(1);
+  return result.length > 0 ? result[0] : null;
 }
 
 export async function getCharactersByUserId(userId: number) {

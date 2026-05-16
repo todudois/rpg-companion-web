@@ -1,14 +1,13 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRPG } from "@/contexts/RPGContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import LobbyPage from "./rpg/LobbyPage";
 import DiceRollPage from "./rpg/DiceRollPage";
 import CharactersPage from "./rpg/CharactersPage";
-import CharacterAttributesPage from "./rpg/CharacterAttributesPage";
 import MasterScreenPage from "./rpg/MasterScreenPage";
 
 export default function Home() {
@@ -99,12 +98,11 @@ export default function Home() {
             <TabsTrigger value="dados" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
               🎲 Dados e Painel
             </TabsTrigger>
-            <TabsTrigger value="personagens" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
-              ⚔️ Personagens
-            </TabsTrigger>
-            <TabsTrigger value="atributos" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
-              📊 Atributos
-            </TabsTrigger>
+            {activeRole === "jogador" && (
+              <TabsTrigger value="personagens" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+                ⚔️ Personagens
+              </TabsTrigger>
+            )}
             <TabsTrigger value="mestre" className={`${activeRole === "mestre" ? "data-[state=active]:bg-red-600" : "data-[state=active]:bg-blue-600"} data-[state=active]:text-white`}>
               🗺️ Tela do Mestre
             </TabsTrigger>
@@ -118,13 +116,11 @@ export default function Home() {
             <DiceRollPage />
           </TabsContent>
 
-          <TabsContent value="personagens" className="mt-0">
-            <CharactersPage />
-          </TabsContent>
-
-          <TabsContent value="atributos" className="mt-0">
-            <CharacterAttributesPage />
-          </TabsContent>
+          {activeRole === "jogador" && (
+            <TabsContent value="personagens" className="mt-0">
+              <CharactersPage />
+            </TabsContent>
+          )}
 
           <TabsContent value="mestre" className="mt-0">
             <MasterScreenPage readOnly={activeRole !== "mestre"} />
