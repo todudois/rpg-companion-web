@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
@@ -6,7 +5,7 @@ import { useRPG } from "@/contexts/RPGContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Users, Crown, Sword } from "lucide-react";
+import { Loader2, Users, Crown, Sword, ChevronDown, ChevronUp } from "lucide-react";
 
 const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7", "#f97316", "#ffffff", "#64748b"];
 
@@ -36,6 +35,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
+  const [showParticipants, setShowParticipants] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -103,66 +103,70 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
   };
 
-  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (readOnly) return;
-    e.preventDefault();
     setIsDrawing(true);
-    setLastPos(getPos(e.nativeEvent as any));
+    setLastPos(getPos(e.nativeEvent));
   };
 
-  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (readOnly) return;
-    e.preventDefault();
-    if (!isDrawing || !lastPos) return;
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || readOnly) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    if (!ctx) return;
+    if (!ctx || !canvas) return;
 
-    const pos = getPos(e.nativeEvent as any);
+    const pos = getPos(e.nativeEvent);
+    if (!lastPos) {
+      setLastPos(pos);
+      return;
+    }
 
-    ctx.beginPath();
-    ctx.moveTo(lastPos.x, lastPos.y);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = drawTool === "eraser" ? "#111827" : drawColor;
-    ctx.lineWidth = drawTool === "eraser" ? brushSize * 6 : brushSize;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.stroke();
+    if (drawTool === "pen") {
+      ctx.strokeStyle = drawColor;
+      ctx.lineWidth = brushSize;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(lastPos.x, lastPos.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    } else if (drawTool === "eraser") {
+      ctx.clearRect(pos.x - brushSize / 2, pos.y - brushSize / 2, brushSize, brushSize);
+    }
 
     setLastPos(pos);
   };
 
   const handleMouseUp = () => {
     setIsDrawing(false);
-  };
-
-  const handleClearCanvas = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx) return;
-
-    ctx.fillStyle = "#111827";
-    ctx.fillRect(0, 0, canvas!.width, canvas!.height);
+    setLastPos(null);
   };
 
   const handleSaveCanvas = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const canvasData = canvas.toDataURL("image/png");
-    saveCanvasMutation.mutate(
-      { canvasData },
-      {
-        onSuccess: () => {
-          toast.success("Canvas salvo com sucesso!");
-          setLastRefresh(Date.now());
-        },
-        onError: () => {
-          toast.error("Erro ao salvar canvas");
-        },
-      }
-    );
+    try {
+      const canvasData = canvas.toDataURL("image/png");
+      await saveCanvasMutation.mutateAsync({
+        canvasData,
+      });
+      toast.success("Canvas salvo com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar canvas");
+    }
+  };
+
+  const handleClearCanvas = () => {
+    if (!confirm("Tem certeza que deseja limpar o canvas?")) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (ctx && canvas) {
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
   };
 
   const handleLoadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,141 +179,138 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       img.onload = () => {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
-        if (!ctx || !canvas) return;
-
-        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
-        const x = (canvas.width - img.width * scale) / 2;
-        const y = (canvas.height - img.height * scale) / 2;
-
-        ctx.fillStyle = "#111827";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        if (ctx && canvas) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
-
-    e.target.value = "";
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="bg-slate-800 border-slate-700">
+    <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
+      {/* Controls Card */}
+      <Card className="bg-slate-800 border-slate-700 flex-shrink-0">
         <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            {!readOnly ? (
-              <>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setDrawTool("pen")}
-                    variant={drawTool === "pen" ? "default" : "outline"}
-                    className={drawTool === "pen" ? "bg-amber-500 hover:bg-amber-600 text-slate-900" : "border-slate-600 text-slate-300"}
-                  >
-                    Caneta
-                  </Button>
-                  <Button
-                    onClick={() => setDrawTool("eraser")}
-                    variant={drawTool === "eraser" ? "default" : "outline"}
-                    className={drawTool === "eraser" ? "bg-amber-500 hover:bg-amber-600 text-slate-900" : "border-slate-600 text-slate-300"}
-                  >
-                    Borracha
-                  </Button>
-                </div>
-
-                <div className="flex gap-2">
-                  {COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => {
-                        setDrawColor(color);
-                        setDrawTool("pen");
-                      }}
-                      className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
-                      style={{
-                        backgroundColor: color,
-                        borderColor: drawColor === color ? "white" : "#475569",
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400">Tam:</span>
-                  <Input
-                    type="range"
-                    min="2"
-                    max="24"
-                    value={brushSize}
-                    onChange={(e) => setBrushSize(parseInt(e.target.value))}
-                    className="w-20 bg-slate-700 border-slate-600"
-                  />
-                  <span className="text-sm text-slate-400 w-6">{brushSize}</span>
-                </div>
-
-                <div className="ml-auto flex gap-2">
-                  <Button
-                    onClick={() => fileRef.current?.click()}
-                    variant="outline"
-                    className="border-slate-600 text-slate-300"
-                  >
-                    Carregar Imagem
-                  </Button>
-                  <Button
-                    onClick={handleClearCanvas}
-                    variant="outline"
-                    className="border-red-600 text-red-400 hover:bg-red-900"
-                  >
-                    Limpar
-                  </Button>
-                  <Button
-                    onClick={handleSaveCanvas}
-                    disabled={saveCanvasMutation.isPending}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {saveCanvasMutation.isPending ? (
-                      <>
-                        <Loader2 className="animate-spin w-4 h-4 mr-2" />
-                        Salvando...
-                      </>
-                    ) : (
-                      "Salvar"
-                    )}
-                  </Button>
-                </div>
-
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleLoadImage}
-                />
-              </>
-            ) : (
-              <div className="flex items-center gap-2 text-slate-400">
-                <span className="text-sm">
-                  🔒 Modo visualização (Atualiza a cada 2 segundos)
-                </span>
-                <Button
-                  onClick={() => refetch()}
-                  variant="outline"
-                  size="sm"
-                  className="border-slate-600 text-slate-300"
+          {!readOnly ? (
+            <div className="space-y-3 sm:space-y-4">
+              {/* Tools Row */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setDrawTool("pen")}
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex-shrink-0 ${
+                    drawTool === "pen"
+                      ? "bg-amber-500 hover:bg-amber-600 text-slate-900"
+                      : "border border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
                 >
-                  Atualizar Agora
-                </Button>
+                  Caneta
+                </button>
+                <button
+                  onClick={() => setDrawTool("eraser")}
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex-shrink-0 ${
+                    drawTool === "eraser"
+                      ? "bg-amber-500 hover:bg-amber-600 text-slate-900"
+                      : "border border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Borracha
+                </button>
               </div>
-            )}
-          </div>
+
+              {/* Colors */}
+              <div className="flex flex-wrap gap-2">
+                {COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => {
+                      setDrawColor(color);
+                      setDrawTool("pen");
+                    }}
+                    className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 flex-shrink-0"
+                    style={{
+                      backgroundColor: color,
+                      borderColor: drawColor === color ? "white" : "#475569",
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Brush Size */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs sm:text-sm text-slate-400 flex-shrink-0">Tamanho:</span>
+                <Input
+                  type="range"
+                  min="2"
+                  max="24"
+                  value={brushSize}
+                  onChange={(e) => setBrushSize(parseInt(e.target.value))}
+                  className="w-20 sm:w-24 bg-slate-700 border-slate-600 flex-shrink-0"
+                />
+                <span className="text-xs sm:text-sm text-slate-400 w-6 flex-shrink-0">{brushSize}</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="px-3 py-2 rounded text-sm font-medium border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors flex-shrink-0"
+                >
+                  Carregar
+                </button>
+                <button
+                  onClick={handleClearCanvas}
+                  className="px-3 py-2 rounded text-sm font-medium border border-red-600 text-red-400 hover:bg-red-900 transition-colors flex-shrink-0"
+                >
+                  Limpar
+                </button>
+                <button
+                  onClick={handleSaveCanvas}
+                  disabled={saveCanvasMutation.isPending}
+                  className="px-3 py-2 rounded text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50 flex-shrink-0"
+                >
+                  {saveCanvasMutation.isPending ? (
+                    <>
+                      <Loader2 className="animate-spin w-4 h-4 inline mr-2" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Salvar"
+                  )}
+                </button>
+              </div>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleLoadImage}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-slate-400 flex-wrap">
+              <span className="text-xs sm:text-sm">
+                🔒 Visualização (Atualiza a cada 2s)
+              </span>
+              <button
+                onClick={() => refetch()}
+                className="px-3 py-2 rounded text-xs sm:text-sm border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors flex-shrink-0"
+              >
+                Atualizar
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Canvas com Painel Lateral */}
-      <div className="flex gap-4 h-[calc(100vh-400px)] min-h-96">
+      {/* Canvas and Participants Container */}
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3 sm:gap-4">
         {/* Canvas Area */}
         <div
           ref={containerRef}
-          className="flex-1 bg-slate-800 border-2 border-slate-700 rounded-lg overflow-hidden relative"
+          className="flex-1 min-h-64 sm:min-h-96 bg-slate-800 border-2 border-slate-700 rounded-lg overflow-hidden relative"
         >
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
@@ -330,76 +331,67 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           />
         </div>
 
-        {/* Participants Panel */}
-        <Card className="w-64 bg-slate-800 border-slate-700 flex flex-col">
+        {/* Participants Panel - Collapsible on Mobile */}
+        <Card className="w-full lg:w-64 bg-slate-800 border-slate-700 flex flex-col">
           <CardContent className="pt-4 flex flex-col h-full overflow-hidden">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-amber-500" />
-              <h3 className="font-semibold text-slate-100">Participantes</h3>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {allUsers && allUsers.length > 0 ? (
-                allUsers.map((participant) => (
-                  <div
-                    key={participant.userId}
-                    className={`p-2 rounded border text-sm ${
-                      participant.role === "mestre"
-                        ? "bg-red-900 border-red-700"
-                        : "bg-blue-900 border-blue-700"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      {participant.role === "mestre" ? (
-                        <Crown className="w-4 h-4 text-red-400" />
-                      ) : (
-                        <Sword className="w-4 h-4 text-blue-400" />
-                      )}
-                      <span className="font-semibold text-slate-100 truncate">
-                        {participant.userName}
-                        {participant.userId === user?.id && " (Você)"}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-300 ml-6">
-                      {participant.role === "mestre"
-                        ? "👑 Mestre"
-                        : `⚔️ ${participant.characterName || "Sem personagem"}`}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-slate-400 text-xs">Nenhum participante conectado.</p>
-              )}
-            </div>
-
-            {/* Status Info */}
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <div className="text-xs text-slate-400 space-y-1">
-                <p>
-                  <span className="font-semibold text-slate-300">Seu papel:</span>
-                </p>
-                <p className={`px-2 py-1 rounded text-center font-semibold ${
-                  activeRole === "mestre"
-                    ? "bg-red-900 text-red-200"
-                    : "bg-blue-900 text-blue-200"
-                }`}>
-                  {activeRole === "mestre" ? "👑 MESTRE" : "⚔️ JOGADOR"}
-                </p>
+            {/* Header with toggle button */}
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 flex-shrink-0" />
+                <h3 className="font-semibold text-slate-100 text-sm sm:text-base">Participantes</h3>
               </div>
+              <button
+                onClick={() => setShowParticipants(!showParticipants)}
+                className="lg:hidden p-1 hover:bg-slate-700 rounded flex-shrink-0"
+              >
+                {showParticipants ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
             </div>
+
+            {/* Participants List */}
+            {showParticipants && (
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                {allUsers && allUsers.length > 0 ? (
+                  allUsers.map((participant) => (
+                    <div
+                      key={participant.userId}
+                      className={`p-2 rounded border text-xs sm:text-sm ${
+                        participant.role === "mestre"
+                          ? "bg-red-900 border-red-700"
+                          : participant.role === "jogador"
+                          ? "bg-blue-900 border-blue-700"
+                          : "bg-purple-900 border-purple-700"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-white truncate">{participant.userName || "Desconhecido"}</p>
+                          <p className="text-xs text-slate-300 truncate">
+                            {participant.role === "mestre" && "👑 Mestre"}
+                            {participant.role === "jogador" && participant.characterName && `🛡️ ${participant.characterName}`}
+                            {participant.role === "jogador" && !participant.characterName && "🛡️ Jogador"}
+                            {participant.role === "espectador" && "👁️ Espectador"}
+                            {participant.role === "indefinido" && "❓ Indefinido"}
+                          </p>
+                        </div>
+                        {participant.role === "mestre" && (
+                          <Crown className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-slate-400 py-4 text-xs">Nenhum participante</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      {readOnly && (
-        <Card className="bg-slate-700 border-slate-600">
-          <CardContent className="pt-4 text-sm text-slate-300">
-            <p>
-              <span className="font-semibold text-blue-400">👁️ Visualização em Tempo Real:</span> Você está vendo o mapa do Mestre. A tela se atualiza automaticamente a cada 2 segundos ou você pode clicar em "Atualizar Agora" para ver as mudanças imediatamente.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

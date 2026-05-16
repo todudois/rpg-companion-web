@@ -35,82 +35,82 @@ export default function LobbyPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Role Selection */}
       <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-amber-500 font-serif">Sala de Espera (Lobby)</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-3 sm:pb-4">
+          <CardTitle className="text-amber-500 font-serif text-lg sm:text-xl">Sala de Espera (Lobby)</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Escolha o seu papel na mesa para liberar as abas e configurar a sua sessão de jogo.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           <div>
-            <h3 className="text-lg font-semibold mb-4">Escolha seu papel:</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3">Escolha seu papel:</h3>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <Button
                 onClick={() => handleRoleChange("mestre")}
                 disabled={hasMaster && currentUserRole !== "mestre"}
                 variant={activeRole === "mestre" ? "default" : "outline"}
-                className={`h-24 text-lg flex flex-col items-center justify-center gap-2 ${
+                className={`h-20 sm:h-24 text-xs sm:text-lg flex flex-col items-center justify-center gap-1 sm:gap-2 ${
                   activeRole === "mestre"
                     ? "bg-red-600 hover:bg-red-700 text-white"
                     : "border-slate-600 text-slate-300 hover:bg-slate-700"
                 } ${hasMaster && currentUserRole !== "mestre" ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <Crown className="h-6 w-6" />
+                <Crown className="h-5 w-5 sm:h-6 sm:w-6" />
                 <span>Mestre</span>
               </Button>
               <Button
                 onClick={() => handleRoleChange("jogador")}
                 variant={activeRole === "jogador" ? "default" : "outline"}
-                className={`h-24 text-lg flex flex-col items-center justify-center gap-2 ${
+                className={`h-20 sm:h-24 text-xs sm:text-lg flex flex-col items-center justify-center gap-1 sm:gap-2 ${
                   activeRole === "jogador"
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "border-slate-600 text-slate-300 hover:bg-slate-700"
                 }`}
               >
-                <Sword className="h-6 w-6" />
+                <Sword className="h-5 w-5 sm:h-6 sm:w-6" />
                 <span>Jogador</span>
               </Button>
               <Button
                 onClick={() => handleRoleChange("espectador")}
                 variant={activeRole === "espectador" ? "default" : "outline"}
-                className={`h-24 text-lg flex flex-col items-center justify-center gap-2 ${
+                className={`h-20 sm:h-24 text-xs sm:text-lg flex flex-col items-center justify-center gap-1 sm:gap-2 ${
                   activeRole === "espectador"
                     ? "bg-purple-600 hover:bg-purple-700 text-white"
                     : "border-slate-600 text-slate-300 hover:bg-slate-700"
                 }`}
               >
-                <Eye className="h-6 w-6" />
+                <Eye className="h-5 w-5 sm:h-6 sm:w-6" />
                 <span>Espectador</span>
               </Button>
             </div>
             {hasMaster && currentUserRole !== "mestre" && (
-              <p className="text-sm text-red-400 mt-3">⚠️ Já existe um Mestre neste lobby</p>
+              <p className="text-xs sm:text-sm text-red-400 mt-2 sm:mt-3">⚠️ Já existe um Mestre neste lobby</p>
             )}
           </div>
 
           {/* Character Selection for Players */}
           {activeRole === "jogador" && (
-            <div className="border-t border-slate-700 pt-6">
-              <h3 className="text-lg font-semibold mb-4">Vincular seu personagem:</h3>
+            <div className="border-t border-slate-700 pt-4 sm:pt-6">
+              <h3 className="text-base sm:text-lg font-semibold mb-3">Vincular seu personagem:</h3>
               <Select value={activeCharacterId?.toString() || ""} onValueChange={(val) => setActiveCharacterId(val ? parseInt(val) : null)}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100">
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100 w-full text-sm">
                   <SelectValue placeholder="Selecione um personagem" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {characters?.map((char) => (
-                    <SelectItem key={char.id} value={char.id.toString()}>
+                    <SelectItem key={char.id} value={char.id.toString()} className="text-sm">
                       {char.name} (Nv. {char.nivel} - {char.classe})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {activeCharacterId && selectedCharacter && (
-                <div className="mt-4 p-3 bg-blue-900 border border-blue-700 rounded-lg">
-                  <p className="text-sm text-blue-200">
-                    ✓ Personagem vinculado: <span className="font-semibold">{selectedCharacter.name}</span>
+                <div className="mt-3 p-3 bg-blue-900 border border-blue-700 rounded-lg">
+                  <p className="text-xs sm:text-sm text-blue-200">
+                    ✓ Personagem vinculado: <span className="font-semibold truncate">{selectedCharacter.name}</span>
                   </p>
                 </div>
               )}
@@ -119,9 +119,9 @@ export default function LobbyPage() {
 
           {/* Role Info */}
           {activeRole && activeRole !== "indefinido" && (
-            <div className="border-t border-slate-700 pt-6">
-              <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
-                <p className="text-sm text-slate-300">
+            <div className="border-t border-slate-700 pt-4 sm:pt-6">
+              <div className="p-3 sm:p-4 bg-slate-700 rounded-lg border border-slate-600">
+                <p className="text-xs sm:text-sm text-slate-300">
                   {activeRole === "mestre" && "👑 Como Mestre, você pode desenhar mapas, gerenciar a sessão e controlar o jogo."}
                   {activeRole === "jogador" && "🛡️ Como Jogador, você pode rolar dados, gerenciar seu personagem e participar da aventura."}
                   {activeRole === "espectador" && "👁️ Como Espectador, você pode ver o mapa do Mestre e acompanhar a sessão, mas não participa ativamente."}
@@ -134,20 +134,20 @@ export default function LobbyPage() {
 
       {/* Participants */}
       <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-amber-500" />
-            <span className="text-amber-500 font-serif">Participantes da Sessão</span>
+        <CardHeader className="pb-3 sm:pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 flex-shrink-0" />
+            <span className="text-amber-500 font-serif truncate">Participantes da Sessão</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {allUsers && allUsers.length > 0 ? (
             <div className="space-y-2">
               {allUsers.map((participant) => (
-                <div key={participant.id} className="p-3 bg-slate-700 rounded-lg border border-slate-600 flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-white">{participant.userName || "Desconhecido"}</p>
-                    <p className="text-sm text-slate-400">
+                <div key={participant.id} className="p-2 sm:p-3 bg-slate-700 rounded-lg border border-slate-600 flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-white text-sm truncate">{participant.userName || "Desconhecido"}</p>
+                    <p className="text-xs text-slate-400 truncate">
                       {participant.role === "mestre" && "👑 Mestre"}
                       {participant.role === "jogador" && participant.characterName && `🛡️ ${participant.characterName}`}
                       {participant.role === "jogador" && !participant.characterName && "🛡️ Jogador (sem personagem)"}
@@ -155,12 +155,12 @@ export default function LobbyPage() {
                       {participant.role === "indefinido" && "❓ Indefinido"}
                     </p>
                   </div>
-                  {participant.role === "mestre" && <Crown className="h-5 w-5 text-red-500" />}
+                  {participant.role === "mestre" && <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 flex-shrink-0" />}
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-center text-slate-400 py-8">Nenhum participante ainda</p>
+            <p className="text-center text-slate-400 py-6 sm:py-8 text-sm">Nenhum participante ainda</p>
           )}
         </CardContent>
       </Card>

@@ -171,3 +171,12 @@
 - [x] LobbySelectionPage como rota inicial deixou layout quebrado (sem header)
 - [x] Erro ao entrar em lobby via código + senha
 - [x] Interface esquisita/sem layout completo na seleção de lobbys
+
+
+## Responsividade Mobile (Novo Foco)
+
+- [x] Corrigir overflow horizontal (borda branca ao arrastar)
+- [x] Ajustar header para mobile (abas amontoadas)
+- [x] Corrigir containers pequenos (nomes saindo dos limites)
+- [x] Ajustar canvas para mobile
+- [x] Testar em diferentes tamanhos de tela (320px, 375px, 768px)

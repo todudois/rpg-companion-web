@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useRPG } from "@/contexts/RPGContext";
 import { useState, useEffect } from "react";
@@ -117,10 +117,11 @@ export default function DiceRollPage() {
   const totalBonus = manualBonus + attrBonus;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4">
+      {/* Dice Type Selection */}
       <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-amber-500 font-serif">Tipo de Dado</CardTitle>
+        <CardHeader className="pb-3 sm:pb-4">
+          <CardTitle className="text-amber-500 font-serif text-base sm:text-lg">Tipo de Dado</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -129,7 +130,11 @@ export default function DiceRollPage() {
                 key={d}
                 onClick={() => setDiceType(d)}
                 variant={diceType === d ? "default" : "outline"}
-                className={diceType === d ? "bg-amber-500 hover:bg-amber-600 text-slate-900" : "border-slate-600 text-slate-300 hover:bg-slate-700"}
+                className={`text-xs sm:text-sm flex-shrink-0 ${
+                  diceType === d
+                    ? "bg-amber-500 hover:bg-amber-600 text-slate-900"
+                    : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                }`}
               >
                 d{d}
               </Button>
@@ -138,25 +143,26 @@ export default function DiceRollPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Number of Dice and Bonus - Stack on mobile, grid on desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-sm text-amber-500 font-serif">Nº de Dados</CardTitle>
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-xs sm:text-sm text-amber-500 font-serif">Nº de Dados</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-3 sm:gap-4">
               <Button
                 onClick={() => setNumDice(Math.max(1, numDice - 1))}
                 variant="outline"
-                className="border-slate-600 text-slate-300"
+                className="border-slate-600 text-slate-300 text-sm sm:text-base flex-shrink-0"
               >
                 −
               </Button>
-              <span className="text-3xl font-bold text-amber-500">{numDice}</span>
+              <span className="text-2xl sm:text-3xl font-bold text-amber-500 w-12 text-center">{numDice}</span>
               <Button
                 onClick={() => setNumDice(Math.min(20, numDice + 1))}
                 variant="outline"
-                className="border-slate-600 text-slate-300"
+                className="border-slate-600 text-slate-300 text-sm sm:text-base flex-shrink-0"
               >
                 +
               </Button>
@@ -165,25 +171,29 @@ export default function DiceRollPage() {
         </Card>
 
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-sm text-amber-500 font-serif">Bônus Individual</CardTitle>
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-xs sm:text-sm text-amber-500 font-serif">Bônus Individual</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-3 sm:gap-4">
               <Button
                 onClick={() => setManualBonus(manualBonus - 1)}
                 variant="outline"
-                className="border-slate-600 text-slate-300"
+                className="border-slate-600 text-slate-300 text-sm sm:text-base flex-shrink-0"
               >
                 −
               </Button>
-              <span className={`text-3xl font-bold ${totalBonus > 0 ? "text-green-400" : totalBonus < 0 ? "text-red-400" : "text-slate-400"}`}>
+              <span
+                className={`text-2xl sm:text-3xl font-bold w-12 text-center ${
+                  totalBonus > 0 ? "text-green-400" : totalBonus < 0 ? "text-red-400" : "text-slate-400"
+                }`}
+              >
                 {totalBonus >= 0 ? "+" : ""}{totalBonus}
               </span>
               <Button
                 onClick={() => setManualBonus(manualBonus + 1)}
                 variant="outline"
-                className="border-slate-600 text-slate-300"
+                className="border-slate-600 text-slate-300 text-sm sm:text-base flex-shrink-0"
               >
                 +
               </Button>
@@ -192,20 +202,21 @@ export default function DiceRollPage() {
         </Card>
       </div>
 
+      {/* Character and Attribute Selection */}
       {characters && characters.length > 0 && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-sm text-amber-500 font-serif">Personagem</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm text-amber-500 font-serif">Personagem</CardTitle>
             </CardHeader>
             <CardContent>
               <Select value={selectedCharacterId} onValueChange={setSelectedCharacterId}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100">
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100 w-full text-xs sm:text-sm">
                   <SelectValue placeholder="Selecione um personagem" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {characters.map((char) => (
-                    <SelectItem key={char.id} value={char.id.toString()}>
+                    <SelectItem key={char.id} value={char.id.toString()} className="text-xs sm:text-sm">
                       {char.name}
                     </SelectItem>
                   ))}
@@ -215,18 +226,18 @@ export default function DiceRollPage() {
           </Card>
 
           <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-sm text-amber-500 font-serif">Atributo</CardTitle>
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm text-amber-500 font-serif">Atributo</CardTitle>
             </CardHeader>
             <CardContent>
               <Select value={selectedAttribute} onValueChange={setSelectedAttribute}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100">
+                <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100 w-full text-xs sm:text-sm">
                   <SelectValue placeholder="Nenhum atributo" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="none">Nenhum</SelectItem>
+                  <SelectItem value="none" className="text-xs sm:text-sm">Nenhum</SelectItem>
                   {ATTRIBUTES.map((attr) => (
-                    <SelectItem key={attr.key} value={attr.key}>
+                    <SelectItem key={attr.key} value={attr.key} className="text-xs sm:text-sm">
                       {attr.short}
                     </SelectItem>
                   ))}
@@ -237,10 +248,11 @@ export default function DiceRollPage() {
         </div>
       )}
 
+      {/* Dice Roll Display and Button */}
       <Card className="bg-slate-800 border-slate-700">
-        <CardContent className="pt-6 text-center">
+        <CardContent className="pt-4 sm:pt-6 text-center">
           <div
-            className="text-6xl font-bold font-serif mb-4 min-h-20 flex items-center justify-center"
+            className="text-4xl sm:text-6xl font-bold font-serif mb-3 sm:mb-4 min-h-16 sm:min-h-20 flex items-center justify-center"
             style={{
               color: lastRoll?.isCrit ? "#fbbf24" : lastRoll?.isFail ? "#ef4444" : "#f1f5f9",
               textShadow: lastRoll?.isCrit ? "0 0 24px #fbbf24" : "none",
@@ -249,10 +261,10 @@ export default function DiceRollPage() {
             {displayNum !== null ? displayNum : "−"}
           </div>
           {lastRoll && (
-            <div className="text-sm text-slate-400 mb-4">
+            <div className="text-xs sm:text-sm text-slate-400 mb-3 sm:mb-4">
               {lastRoll.isCrit && <p className="text-amber-400 font-bold">⭐ CRÍTICO NATURAL! ⭐</p>}
               {lastRoll.isFail && <p className="text-red-400 font-bold">💀 FALHA CRÍTICA!</p>}
-              <p>Dados: [{lastRoll.pureResults.join(", ")}]</p>
+              <p className="truncate">Dados: [{lastRoll.pureResults.join(", ")}]</p>
               {lastRoll.totalUnitBonus !== 0 && (
                 <p className={lastRoll.totalUnitBonus > 0 ? "text-green-400" : "text-red-400"}>
                   Bônus: {lastRoll.totalUnitBonus >= 0 ? "+" : ""}{lastRoll.totalUnitBonus}
@@ -264,7 +276,7 @@ export default function DiceRollPage() {
             onClick={handleRoll}
             disabled={rolling}
             size="lg"
-            className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-lg"
+            className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-sm sm:text-lg"
           >
             {rolling ? (
               <>
@@ -278,23 +290,24 @@ export default function DiceRollPage() {
         </CardContent>
       </Card>
 
+      {/* Dice History */}
       {diceHistory && diceHistory.length > 0 && (
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-sm text-amber-500 font-serif">Histórico de Rolagens</CardTitle>
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-xs sm:text-sm text-amber-500 font-serif">Histórico de Rolagens</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {diceHistory.map((roll) => (
-                <div key={roll.id} className="flex items-center gap-2 text-xs text-slate-400 bg-slate-700 p-2 rounded">
-                  <span className="font-mono">{roll.numDice}d{roll.diceType}</span>
-                  <span className="flex-1">[{(roll.pureResults as number[]).join(", ")}]</span>
+                <div key={roll.id} className="flex items-center gap-2 text-xs text-slate-400 bg-slate-700 p-2 rounded min-w-0">
+                  <span className="font-mono flex-shrink-0">{roll.numDice}d{roll.diceType}</span>
+                  <span className="flex-1 truncate">[{(roll.pureResults as number[]).join(", ")}]</span>
                   {roll.totalUnitBonus !== 0 && (
-                    <span className={roll.totalUnitBonus > 0 ? "text-green-400" : "text-red-400"}>
+                    <span className={`flex-shrink-0 ${roll.totalUnitBonus > 0 ? "text-green-400" : "text-red-400"}`}>
                       {roll.totalUnitBonus >= 0 ? "+" : ""}{roll.totalUnitBonus}
                     </span>
                   )}
-                  <span className="font-bold text-slate-100">{roll.total}</span>
+                  <span className="font-bold text-slate-100 flex-shrink-0">{roll.total}</span>
                 </div>
               ))}
             </div>
