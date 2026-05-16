@@ -251,3 +251,11 @@
 - [x] Investigar erro NOT_FOUND na página inicial
 - [x] Corrigir query rpg.attributes.get para retornar null em vez de lançar erro
 - [x] Adicionar validação em rpg.attributes.upsert
+
+
+## Sincronização de Canvas (Novo - Bug Crítico)
+
+- [x] Investigar como o canvas está armazenando e sincronizando desenhos
+- [x] Verificar se há polling ou WebSocket para atualizar canvas em tempo real
+- [x] Corrigir sistema de sincronização de desenhos
+- [x] Testar se desenhos aparecem para todos os jogadores

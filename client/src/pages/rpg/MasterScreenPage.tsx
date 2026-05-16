@@ -51,6 +51,17 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
   const [resizeMode, setResizeMode] = useState<string | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced save function to avoid too many requests
+  const saveCanvasDebounced = () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      handleSaveCanvas();
+    }, 500); // Wait 500ms after last action before saving
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -140,12 +151,22 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   useEffect(() => {
     if (!readOnly) return;
 
+    // Jogadores atualizam o canvas a cada 1 segundo para sincronizacao mais rapida
     const interval = setInterval(() => {
       refetch();
-    }, 2000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [readOnly, refetch]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getPos = (e: MouseEvent | TouchEvent) => {
     const canvas = canvasRef.current;
@@ -267,6 +288,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     setDraggedImageId(null);
     setResizeMode(null);
     setLastPos(null);
+    // Auto-save canvas after drawing
+    saveCanvasDebounced();
   };
 
   const handleClearCanvas = () => {
@@ -340,7 +363,10 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       await saveCanvasMutation.mutateAsync({
         canvasData,
       });
-      toast.success("Canvas salvo com sucesso!");
+      // Only show toast if it's a manual save (not auto-save)
+      if (!saveTimeoutRef.current) {
+        toast.success("Canvas salvo com sucesso!");
+      }
     } catch (error: any) {
       toast.error(error.message || "Erro ao salvar canvas");
     }
@@ -441,11 +467,13 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                 </button>
                 {selectedImageId && (
                   <button
-                    onClick={() => {
-                      setDrawableImages(drawableImages.filter(img => img.id !== selectedImageId));
-                      setSelectedImageId(null);
-                      toast.success("Imagem deletada!");
-                    }}
+                  onClick={() => {
+                    setDrawableImages(drawableImages.filter(img => img.id !== selectedImageId));
+                    setSelectedImageId(null);
+                    toast.success("Imagem deletada!");
+                    // Auto-save after deleting image
+                    saveCanvasDebounced();
+                  }}
                     className="px-3 py-2 rounded text-sm font-medium border border-red-600 text-red-400 hover:bg-red-900 transition-colors flex-shrink-0"
                   >
                     🗑️ Deletar Imagem
@@ -484,6 +512,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                       const ctx = canvas?.getContext("2d");
                       if (ctx && canvas) {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        // Auto-save after loading image
+                        saveCanvasDebounced();
                       }
                     };
                     img.src = event.target?.result as string;
