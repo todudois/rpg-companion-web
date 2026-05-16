@@ -1,4 +1,4 @@
-import { useParams, useRouter } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,8 +40,9 @@ const getAttributeColor = (value: number) => {
 };
 
 export default function CharacterDetailsPage() {
-  const [, navigate] = useRouter();
+  const [, setLocation] = useLocation();
   const { id } = useParams<{ id: string }>();
+  const navigate = (path: string) => setLocation(path);
   const characterId = parseInt(id || "0");
 
   const { data: character, isLoading: charLoading } = trpc.rpg.characters.get.useQuery(
@@ -72,7 +73,7 @@ export default function CharacterDetailsPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button
-          onClick={() => navigate("/personagens")}
+          onClick={() => setLocation("/")}
           variant="ghost"
           size="sm"
           className="text-slate-400 hover:text-slate-200"
