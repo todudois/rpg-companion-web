@@ -46,9 +46,17 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     if (!ctx) return;
 
     const resizeCanvas = () => {
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      // Use clientWidth/clientHeight instead of getBoundingClientRect for more reliable sizing
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      
+      // Only resize if dimensions actually changed
+      if (canvas.width === width && canvas.height === height && !isLoading) {
+        return;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -62,17 +70,25 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           setIsLoading(false);
         };
         img.src = savedCanvas.canvasData;
-      } else {
+      } else if (isLoading) {
         setIsLoading(false);
       }
     };
 
-    resizeCanvas();
+    // Initial resize with a small delay to ensure DOM is fully rendered
+    const timeoutId = setTimeout(() => resizeCanvas(), 0);
 
-    const resizeObserver = new ResizeObserver(() => resizeCanvas());
+    const resizeObserver = new ResizeObserver(() => {
+      // Debounce resize events
+      clearTimeout(timeoutId);
+      setTimeout(() => resizeCanvas(), 0);
+    });
     resizeObserver.observe(container);
 
-    return () => resizeObserver.disconnect();
+    return () => {
+      clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+    };
   }, [savedCanvas, isLoading]);
 
   // Jogadores atualizam o canvas a cada 2 segundos
@@ -310,7 +326,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         {/* Canvas Area */}
         <div
           ref={containerRef}
-          className="flex-1 min-h-64 sm:min-h-96 bg-slate-800 border-2 border-slate-700 rounded-lg overflow-hidden relative"
+          className="flex-1 h-full bg-slate-800 border-2 border-slate-700 rounded-lg overflow-hidden relative"
         >
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
