@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useRPG } from "@/contexts/RPGContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -13,12 +14,22 @@ interface MasterScreenPageProps {
   readOnly?: boolean;
 }
 
+interface DrawableImage {
+  id: string;
+  img: HTMLImageElement;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export default function MasterScreenPage({ readOnly = false }: MasterScreenPageProps) {
   const { user } = useAuth();
   const { activeMasterId, activeRole } = useRPG();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const imageFileRef = useRef<HTMLInputElement>(null);
   const { data: savedCanvas, refetch } = trpc.rpg.masterCanvas.get.useQuery(
     { masterId: readOnly ? activeMasterId || undefined : undefined }
   );
@@ -28,7 +39,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   );
   const saveCanvasMutation = trpc.rpg.masterCanvas.save.useMutation();
 
-  const [drawTool, setDrawTool] = useState<"pen" | "eraser">("pen");
+  const [drawTool, setDrawTool] = useState<"pen" | "eraser" | "select">("pen");
   const [drawColor, setDrawColor] = useState("#ef4444");
   const [brushSize, setBrushSize] = useState(5);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -36,6 +47,10 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
   const [showParticipants, setShowParticipants] = useState(true);
+  const [drawableImages, setDrawableImages] = useState<DrawableImage[]>([]);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
+  const [resizeMode, setResizeMode] = useState<string | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -91,6 +106,36 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
   }, [savedCanvas, isLoading]);
 
+  // Redraw canvas with images
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Redraw background
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw all images
+    drawableImages.forEach((img) => {
+      ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
+
+      // Draw selection box if selected
+      if (img.id === selectedImageId && !readOnly) {
+        ctx.strokeStyle = "#fbbf24";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(img.x, img.y, img.width, img.height);
+
+        // Draw resize handle
+        const handleSize = 10;
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillRect(img.x + img.width - handleSize, img.y + img.height - handleSize, handleSize, handleSize);
+      }
+    });
+  }, [drawableImages, selectedImageId, readOnly]);
+
   // Jogadores atualizam o canvas a cada 2 segundos
   useEffect(() => {
     if (!readOnly) return;
@@ -119,44 +164,159 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
   };
 
+  const getImageAtPos = (x: number, y: number): string | null => {
+    for (let i = drawableImages.length - 1; i >= 0; i--) {
+      const img = drawableImages[i];
+      if (x >= img.x && x <= img.x + img.width && y >= img.y && y <= img.y + img.height) {
+        return img.id;
+      }
+    }
+    return null;
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (readOnly) return;
-    setIsDrawing(true);
-    setLastPos(getPos(e.nativeEvent));
+    
+    const pos = getPos(e.nativeEvent as MouseEvent | TouchEvent);
+
+    if (drawTool === "select") {
+      const imageId = getImageAtPos(pos.x, pos.y);
+      if (imageId) {
+        setSelectedImageId(imageId);
+        setDraggedImageId(imageId);
+        
+        // Check if clicking on resize handle
+        const img = drawableImages.find((i) => i.id === imageId);
+        if (img) {
+          const handleSize = 10;
+          if (
+            pos.x >= img.x + img.width - handleSize &&
+            pos.x <= img.x + img.width &&
+            pos.y >= img.y + img.height - handleSize &&
+            pos.y <= img.y + img.height
+          ) {
+            setResizeMode("resize");
+          } else {
+            setResizeMode("drag");
+          }
+        }
+      } else {
+        setSelectedImageId(null);
+      }
+    } else {
+      setIsDrawing(true);
+      setLastPos(pos);
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || readOnly) return;
+    if (readOnly) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx || !canvas) return;
+    const pos = getPos(e.nativeEvent as MouseEvent | TouchEvent);
 
-    const pos = getPos(e.nativeEvent);
-    if (!lastPos) {
+    if (drawTool === "select" && draggedImageId) {
+      const img = drawableImages.find((i) => i.id === draggedImageId);
+      if (!img) return;
+
+      if (resizeMode === "drag") {
+        const dx = pos.x - (lastPos?.x || pos.x);
+        const dy = pos.y - (lastPos?.y || pos.y);
+        setDrawableImages(
+          drawableImages.map((i) =>
+            i.id === draggedImageId ? { ...i, x: i.x + dx, y: i.y + dy } : i
+          )
+        );
+      } else if (resizeMode === "resize") {
+        const newWidth = Math.max(20, pos.x - img.x);
+        const newHeight = Math.max(20, pos.y - img.y);
+        setDrawableImages(
+          drawableImages.map((i) =>
+            i.id === draggedImageId ? { ...i, width: newWidth, height: newHeight } : i
+          )
+        );
+      }
       setLastPos(pos);
       return;
-    }
+    } else if (isDrawing && lastPos) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    if (drawTool === "pen") {
-      ctx.strokeStyle = drawColor;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
       ctx.lineWidth = brushSize;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(lastPos.x, lastPos.y);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    } else if (drawTool === "eraser") {
-      ctx.clearRect(pos.x - brushSize / 2, pos.y - brushSize / 2, brushSize, brushSize);
-    }
 
-    setLastPos(pos);
+      if (drawTool === "eraser") {
+        ctx.clearRect(lastPos.x - brushSize / 2, lastPos.y - brushSize / 2, brushSize, brushSize);
+      } else {
+        ctx.strokeStyle = drawColor;
+        ctx.beginPath();
+        ctx.moveTo(lastPos.x, lastPos.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+
+      setLastPos(pos);
+    }
   };
 
   const handleMouseUp = () => {
     setIsDrawing(false);
+    setDraggedImageId(null);
+    setResizeMode(null);
     setLastPos(null);
+  };
+
+  const handleClearCanvas = () => {
+    if (!confirm("Tem certeza que deseja limpar o canvas?")) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setDrawableImages([]);
+    setSelectedImageId(null);
+  };
+
+  const handleLoadImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const centerX = Math.max(50, canvas.width / 2 - 100);
+        const centerY = Math.max(50, canvas.height / 2 - 100);
+        
+        const newImage: DrawableImage = {
+          id: Date.now().toString(),
+          img,
+          x: centerX,
+          y: centerY,
+          width: Math.min(200, img.width),
+          height: Math.min(200, img.height),
+        };
+        setDrawableImages([...drawableImages, newImage]);
+        setSelectedImageId(newImage.id);
+        setDrawTool("select");
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+
+    if (imageFileRef.current) {
+      imageFileRef.current.value = "";
+    }
   };
 
   const handleSaveCanvas = async () => {
@@ -164,7 +324,19 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     if (!canvas) return;
 
     try {
-      const canvasData = canvas.toDataURL("image/png");
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext("2d");
+      if (!tempCtx) return;
+
+      tempCtx.drawImage(canvas, 0, 0);
+
+      drawableImages.forEach((img) => {
+        tempCtx.drawImage(img.img, img.x, img.y, img.width, img.height);
+      });
+
+      const canvasData = tempCanvas.toDataURL("image/png");
       await saveCanvasMutation.mutateAsync({
         canvasData,
       });
@@ -172,36 +344,6 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     } catch (error: any) {
       toast.error(error.message || "Erro ao salvar canvas");
     }
-  };
-
-  const handleClearCanvas = () => {
-    if (!confirm("Tem certeza que deseja limpar o canvas?")) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (ctx && canvas) {
-      ctx.fillStyle = "#111827";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-  };
-
-  const handleLoadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext("2d");
-        if (ctx && canvas) {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
@@ -232,6 +374,16 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                   }`}
                 >
                   Borracha
+                </button>
+                <button
+                  onClick={() => setDrawTool("select")}
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex-shrink-0 ${
+                    drawTool === "select"
+                      ? "bg-amber-500 hover:bg-amber-600 text-slate-900"
+                      : "border border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Selecionar
                 </button>
               </div>
 
@@ -270,6 +422,12 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-2">
                 <button
+                  onClick={() => imageFileRef.current?.click()}
+                  className="px-3 py-2 rounded text-sm font-medium border border-blue-600 text-blue-400 hover:bg-blue-900 transition-colors flex-shrink-0"
+                >
+                  🖼️ Adicionar Imagem
+                </button>
+                <button
                   onClick={() => fileRef.current?.click()}
                   className="px-3 py-2 rounded text-sm font-medium border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors flex-shrink-0"
                 >
@@ -299,6 +457,30 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
 
               <input
                 ref={fileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                      const canvas = canvasRef.current;
+                      if (!canvas) return;
+                      const ctx = canvas?.getContext("2d");
+                      if (ctx && canvas) {
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                      }
+                    };
+                    img.src = event.target?.result as string;
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <input
+                ref={imageFileRef}
                 type="file"
                 accept="image/*"
                 style={{ display: "none" }}
@@ -394,14 +576,13 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                             {participant.role === "indefinido" && "❓ Indefinido"}
                           </p>
                         </div>
-                        {participant.role === "mestre" && (
-                          <Crown className="w-4 h-4 text-red-500 flex-shrink-0" />
-                        )}
+                        {participant.role === "mestre" && <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 flex-shrink-0" />}
+                        {participant.role === "jogador" && <Sword className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400 flex-shrink-0" />}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-slate-400 py-4 text-xs">Nenhum participante</p>
+                  <p className="text-xs text-slate-500 text-center py-4">Nenhum participante</p>
                 )}
               </div>
             )}

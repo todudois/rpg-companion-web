@@ -180,3 +180,10 @@
 - [x] Corrigir containers pequenos (nomes saindo dos limites)
 - [x] Ajustar canvas para mobile
 - [x] Testar em diferentes tamanhos de tela (320px, 375px, 768px)
+
+
+## Melhorias de UI (Novo Foco)
+
+- [x] Melhorar cards de personagens com cores, badges e estilo visual
+- [x] Corrigir contraste de textos pretos para branco/cinza
+- [x] Implementar seleção, drag e resize de imagens no canvas do mestre
