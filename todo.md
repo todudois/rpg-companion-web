@@ -164,3 +164,10 @@
 - [x] Mostrar participantes como "Indefinido" até escolher role
 - [x] Atualizar painel de participantes para mostrar role atual
 - [x] Permitir trocar de role a qualquer momento
+
+
+## Bugs Encontrados
+
+- [x] LobbySelectionPage como rota inicial deixou layout quebrado (sem header)
+- [x] Erro ao entrar em lobby via código + senha
+- [x] Interface esquisita/sem layout completo na seleção de lobbys

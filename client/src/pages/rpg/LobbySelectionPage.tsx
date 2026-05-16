@@ -76,7 +76,8 @@ export default function LobbySelectionPage() {
       setJoinCode("");
       setJoinPassword("");
       setActiveMasterId(result.id);
-      setActiveRole("indefinido");
+      // Definir role como "jogador" ao entrar em um lobby
+      setActiveRole("jogador");
     } catch (error: any) {
       toast.error(error.message || "Erro ao entrar no lobby");
     } finally {

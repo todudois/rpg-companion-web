@@ -48,11 +48,6 @@ export default function Home() {
     );
   }
 
-  // Se não tem um lobby ativo, mostrar seleção de lobby
-  if (!activeRole || activeRole === "unassigned") {
-    return <LobbySelectionPage />;
-  }
-
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
       {/* Header */}
@@ -83,16 +78,18 @@ export default function Home() {
             )}
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-400">{user?.name}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveRole("unassigned");
-                }}
-                className="text-slate-300 border-slate-600 hover:bg-slate-700"
-              >
-                Trocar Lobby
-              </Button>
+              {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveRole("unassigned");
+                  }}
+                  className="text-slate-300 border-slate-600 hover:bg-slate-700"
+                >
+                  Trocar Lobby
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -108,56 +105,61 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-slate-800 border border-slate-700 mb-6 flex-wrap">
-            <TabsTrigger value="lobby" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
-              🏢 Lobby
-            </TabsTrigger>
+        {/* Se não tem um lobby ativo, mostrar seleção de lobby */}
+        {!activeRole || activeRole === "unassigned" ? (
+          <LobbySelectionPage />
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="bg-slate-800 border border-slate-700 mb-6 flex-wrap">
+              <TabsTrigger value="lobby" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+                🏢 Lobby
+              </TabsTrigger>
+              {(activeRole === "mestre" || activeRole === "jogador") && (
+                <TabsTrigger value="dados" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+                  🎲 Dados e Painel
+                </TabsTrigger>
+              )}
+              {activeRole === "jogador" && (
+                <TabsTrigger value="personagens" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
+                  ⚔️ Personagens
+                </TabsTrigger>
+              )}
+              {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
+                <TabsTrigger value="mestre" className={`${
+                  activeRole === "mestre"
+                    ? "data-[state=active]:bg-red-600"
+                    : activeRole === "jogador"
+                    ? "data-[state=active]:bg-blue-600"
+                    : "data-[state=active]:bg-purple-600"
+                } data-[state=active]:text-white`}>
+                  🗺️ Tela do Mestre
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            <TabsContent value="lobby" className="mt-0">
+              <LobbyPage />
+            </TabsContent>
+
             {(activeRole === "mestre" || activeRole === "jogador") && (
-              <TabsTrigger value="dados" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
-                🎲 Dados e Painel
-              </TabsTrigger>
+              <TabsContent value="dados" className="mt-0">
+                <DiceRollPage />
+              </TabsContent>
             )}
+
             {activeRole === "jogador" && (
-              <TabsTrigger value="personagens" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900">
-                ⚔️ Personagens
-              </TabsTrigger>
+              <TabsContent value="personagens" className="mt-0">
+                <CharactersPage />
+              </TabsContent>
             )}
+
             {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
-              <TabsTrigger value="mestre" className={`${
-                activeRole === "mestre"
-                  ? "data-[state=active]:bg-red-600"
-                  : activeRole === "jogador"
-                  ? "data-[state=active]:bg-blue-600"
-                  : "data-[state=active]:bg-purple-600"
-              } data-[state=active]:text-white`}>
-                🗺️ Tela do Mestre
-              </TabsTrigger>
+              <TabsContent value="mestre" className="mt-0">
+                <MasterScreenPage readOnly={activeRole !== "mestre"} />
+              </TabsContent>
             )}
-          </TabsList>
-
-          <TabsContent value="lobby" className="mt-0">
-            <LobbyPage />
-          </TabsContent>
-
-          {(activeRole === "mestre" || activeRole === "jogador") && (
-            <TabsContent value="dados" className="mt-0">
-              <DiceRollPage />
-            </TabsContent>
-          )}
-
-          {activeRole === "jogador" && (
-            <TabsContent value="personagens" className="mt-0">
-              <CharactersPage />
-            </TabsContent>
-          )}
-
-          {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
-            <TabsContent value="mestre" className="mt-0">
-              <MasterScreenPage readOnly={activeRole !== "mestre"} />
-            </TabsContent>
-          )}
-        </Tabs>
+          </Tabs>
+        )}
       </main>
     </div>
   );
