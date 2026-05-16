@@ -1,6 +1,6 @@
 import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, sessionParticipants, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData, SessionParticipant, InsertSessionParticipant } from "../drizzle/schema";
+import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, sessionParticipants, lobbys, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData, SessionParticipant, InsertSessionParticipant, Lobby, InsertLobby } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -236,7 +236,7 @@ export async function upsertMasterCanvasData(userId: number, canvasData: string)
 
 
 // Session participant queries
-export async function upsertSessionParticipant(userId: number, masterId: number, characterId: number | null, role: "mestre" | "jogador") {
+export async function upsertSessionParticipant(userId: number, lobbyId: number, characterId: number | null, role: "mestre" | "jogador") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
@@ -245,19 +245,19 @@ export async function upsertSessionParticipant(userId: number, masterId: number,
   
   if (existing.length > 0) {
     return db.update(sessionParticipants)
-      .set({ masterId, characterId, role })
+      .set({ lobbyId, characterId, role })
       .where(eq(sessionParticipants.userId, userId));
   } else {
     return db.insert(sessionParticipants).values({
       userId,
-      masterId,
+      lobbyId,
       characterId,
       role,
     });
   }
 }
 
-export async function getSessionParticipants(masterId: number) {
+export async function getSessionParticipants(lobbyId: number) {
   const db = await getDb();
   if (!db) return [];
   
@@ -272,7 +272,7 @@ export async function getSessionParticipants(masterId: number) {
     .from(sessionParticipants)
     .leftJoin(users, eq(sessionParticipants.userId, users.id))
     .leftJoin(characters, eq(sessionParticipants.characterId, characters.id))
-    .where(eq(sessionParticipants.masterId, masterId));
+    .where(eq(sessionParticipants.lobbyId, lobbyId));
 }
 
 export async function removeSessionParticipant(userId: number) {
@@ -280,4 +280,71 @@ export async function removeSessionParticipant(userId: number) {
   if (!db) return;
   
   return db.delete(sessionParticipants).where(eq(sessionParticipants.userId, userId));
+}
+
+
+// Lobby queries
+export async function createLobby(masterId: number, name: string, passwordHash: string, accessCode: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(lobbys).values({
+    masterId,
+    name,
+    passwordHash,
+    accessCode,
+  });
+  
+  // Retornar o lobby criado
+  const result = await db.select().from(lobbys).where(eq(lobbys.accessCode, accessCode));
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getLobbyByAccessCode(accessCode: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(lobbys).where(eq(lobbys.accessCode, accessCode));
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getLobbyById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(lobbys).where(eq(lobbys.id, id));
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getActiveLobbysByMasterId(masterId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(lobbys)
+    .where(eq(lobbys.masterId, masterId))
+    .orderBy(desc(lobbys.createdAt));
+}
+
+export async function getAvailableLobbys() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select({
+    id: lobbys.id,
+    name: lobbys.name,
+    accessCode: lobbys.accessCode,
+    maxPlayers: lobbys.maxPlayers,
+    masterName: users.name,
+  })
+    .from(lobbys)
+    .leftJoin(users, eq(lobbys.masterId, users.id))
+    .where(eq(lobbys.isActive, true))
+    .orderBy(desc(lobbys.createdAt));
+}
+
+export async function closeLobby(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  
+  return db.update(lobbys).set({ isActive: false }).where(eq(lobbys.id, id));
 }

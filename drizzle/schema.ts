@@ -177,7 +177,7 @@ export const masterCanvasDataRelations = relations(masterCanvasData, ({ one }) =
 export const sessionParticipants = mysqlTable("sessionParticipants", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  masterId: int("masterId").notNull(),
+  lobbyId: int("lobbyId").notNull(),
   characterId: int("characterId"),
   role: mysqlEnum("role", ["mestre", "jogador"]).notNull(),
   lastActiveAt: timestamp("lastActiveAt").defaultNow().onUpdateNow().notNull(),
@@ -192,12 +192,39 @@ export const sessionParticipantsRelations = relations(sessionParticipants, ({ on
     fields: [sessionParticipants.userId],
     references: [users.id],
   }),
-  master: one(users, {
-    fields: [sessionParticipants.masterId],
-    references: [users.id],
+  lobby: one(lobbys, {
+    fields: [sessionParticipants.lobbyId],
+    references: [lobbys.id],
   }),
   character: one(characters, {
     fields: [sessionParticipants.characterId],
     references: [characters.id],
   }),
+}));
+
+
+/**
+ * Game lobbys - stores game sessions that players can join
+ */
+export const lobbys = mysqlTable("lobbys", {
+  id: int("id").autoincrement().primaryKey(),
+  masterId: int("masterId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  accessCode: varchar("accessCode", { length: 8 }).notNull().unique(),
+  maxPlayers: int("maxPlayers").default(6).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Lobby = typeof lobbys.$inferSelect;
+export type InsertLobby = typeof lobbys.$inferInsert;
+
+export const lobbysRelations = relations(lobbys, ({ one, many }) => ({
+  master: one(users, {
+    fields: [lobbys.masterId],
+    references: [users.id],
+  }),
+  participants: many(sessionParticipants),
 }));

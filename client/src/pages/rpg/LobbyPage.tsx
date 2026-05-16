@@ -11,8 +11,8 @@ export default function LobbyPage() {
   const { activeRole, setActiveRole, activeCharacterId, setActiveCharacterId, activeMasterId } = useRPG();
   const { data: characters } = trpc.rpg.characters.list.useQuery();
   const { data: allUsers } = trpc.rpg.session.getUsers.useQuery(
-    { masterId: activeMasterId || user?.id || 0 },
-    { enabled: !!(activeMasterId || user?.id) }
+    { lobbyId: activeMasterId || 0 },
+    { enabled: !!activeMasterId }
   );
 
   const selectedCharacter = characters?.find((c) => c.id === activeCharacterId);

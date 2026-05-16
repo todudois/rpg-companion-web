@@ -106,3 +106,25 @@
 - [x] Ajustar tamanho do canvas conforme resolução da tela
 - [x] Manter proporção e usabilidade em diferentes dispositivos
 - [x] Otimizar layout para desktop (computador)
+
+
+## Sistema de Lobbys com Senha
+
+### Schema e Backend
+- [x] Criar tabela `lobbys` com nome, senha hash, masterId, código de acesso
+- [x] Criar procedures tRPC para criar/entrar/listar/deletar lobbys
+- [x] Implementar validação de senha
+- [x] Gerar código único para cada lobby
+
+### UI de Lobbys
+- [x] Criar página de seleção: Criar novo lobby ou Entrar em lobby
+- [x] Modal para criar lobby (nome + senha)
+- [x] Modal para entrar em lobby (código/nome + senha)
+- [x] Listar lobbys disponíveis
+- [x] Mostrar código do lobby para compartilhar
+
+### Integração com Participantes
+- [x] Atualizar sessionParticipants para incluir lobbyId
+- [x] Filtrar participantes por lobby
+- [x] Ao entrar em lobby, adicionar à sessão do lobby
+- [x] Ao sair do lobby, remover da sessão

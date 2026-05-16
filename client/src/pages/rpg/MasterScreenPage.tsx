@@ -24,8 +24,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     { masterId: readOnly ? activeMasterId || undefined : undefined }
   );
   const { data: allUsers } = trpc.rpg.session.getUsers.useQuery(
-    { masterId: activeMasterId || user?.id || 0 },
-    { enabled: !!(activeMasterId || user?.id) }
+    { lobbyId: activeMasterId || 0 },
+    { enabled: !!activeMasterId }
   );
   const saveCanvasMutation = trpc.rpg.masterCanvas.save.useMutation();
 

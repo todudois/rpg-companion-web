@@ -22,6 +22,20 @@
       "when": 1778945069224,
       "tag": "0002_light_ego",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1778945585337,
+      "tag": "0003_massive_firebrand",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1778945930069,
+      "tag": "0004_clean_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

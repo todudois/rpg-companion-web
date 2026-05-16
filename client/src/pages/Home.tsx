@@ -9,6 +9,7 @@ import LobbyPage from "./rpg/LobbyPage";
 import DiceRollPage from "./rpg/DiceRollPage";
 import CharactersPage from "./rpg/CharactersPage";
 import MasterScreenPage from "./rpg/MasterScreenPage";
+import LobbySelectionPage from "./rpg/LobbySelectionPage";
 
 export default function Home() {
   const { user, loading, isAuthenticated, logout } = useAuth();
@@ -47,6 +48,11 @@ export default function Home() {
     );
   }
 
+  // Se não tem um lobby ativo, mostrar seleção de lobby
+  if (!activeRole || activeRole === "unassigned") {
+    return <LobbySelectionPage />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
       {/* Header */}
@@ -57,7 +63,7 @@ export default function Home() {
             <h1 className="text-2xl font-bold text-amber-500 font-serif">RPG Companion</h1>
           </div>
           <div className="flex items-center gap-4">
-            {activeRole !== "unassigned" && (
+            {(activeRole === "mestre" || activeRole === "jogador") && (
               <div className="flex items-center gap-2">
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-bold ${
@@ -75,6 +81,16 @@ export default function Home() {
             )}
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-400">{user?.name}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveRole("unassigned");
+                }}
+                className="text-slate-300 border-slate-600 hover:bg-slate-700"
+              >
+                Trocar Lobby
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
