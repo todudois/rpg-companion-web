@@ -187,3 +187,12 @@
 - [x] Melhorar cards de personagens com cores, badges e estilo visual
 - [x] Corrigir contraste de textos pretos para branco/cinza
 - [x] Implementar seleção, drag e resize de imagens no canvas do mestre
+
+
+## Design e Sistema de Habilidades (Novo Foco)
+
+- [x] Aplicar paleta de cores do código de referência (#f59e0b, #1e293b, #0f172a, etc)
+- [x] Implementar sistema de habilidades no banco de dados
+- [x] Criar editor de habilidades com tipos (passiva, ativa, ataque, especial)
+- [x] Criar painel de visualização de habilidades com expandir/colapsar
+- [x] Aplicar estilos de habilidades (cores por tipo, ícones, badges)

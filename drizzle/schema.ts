@@ -75,9 +75,13 @@ export const characterSkills = mysqlTable("characterSkills", {
   id: int("id").autoincrement().primaryKey(),
   characterId: int("characterId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  cost: int("cost").default(0).notNull(),
+  type: mysqlEnum("type", ["passiva", "ativa", "ataque", "especial"]).default("ativa").notNull(),
+  cost: varchar("cost", { length: 255 }),
+  damage: varchar("damage", { length: 255 }),
+  cooldown: varchar("cooldown", { length: 255 }),
   description: text("description"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type CharacterSkill = typeof characterSkills.$inferSelect;

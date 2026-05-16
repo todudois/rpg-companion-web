@@ -43,6 +43,13 @@
       "when": 1778947149600,
       "tag": "0005_cool_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1778967180754,
+      "tag": "0006_yielding_speed",
+      "breakpoints": true
     }
   ]
 }

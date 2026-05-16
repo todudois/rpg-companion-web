@@ -9,6 +9,8 @@ import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2, Edit2 } from "lucide-react";
+import { SkillEditor, type Skill } from "@/components/SkillEditor";
+import { SkillPanel } from "@/components/SkillPanel";
 
 const ATTRIBUTES = [
   { key: "for", label: "Força", short: "FOR" },
@@ -76,6 +78,7 @@ export default function CharactersPage() {
     sor: 0,
     fe: 0,
   });
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [charactersWithAttributes, setCharactersWithAttributes] = useState<CharacterWithAttributes[]>([]);
 
   const utils = trpc.useUtils();
@@ -226,12 +229,15 @@ export default function CharactersPage() {
             </DialogHeader>
 
             <Tabs defaultValue="basico" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-slate-700 mb-4">
+              <TabsList className="grid w-full grid-cols-3 bg-slate-700 mb-4">
                 <TabsTrigger value="basico" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 text-xs sm:text-sm">
                   Básico
                 </TabsTrigger>
                 <TabsTrigger value="atributos" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 text-xs sm:text-sm">
                   Atributos
+                </TabsTrigger>
+                <TabsTrigger value="habilidades" className="data-[state=active]:bg-amber-500 data-[state=active]:text-slate-900 text-xs sm:text-sm">
+                  Habilidades
                 </TabsTrigger>
               </TabsList>
 
@@ -307,6 +313,10 @@ export default function CharactersPage() {
                     className="bg-slate-700 border-slate-600 text-slate-100 min-h-20 text-sm"
                   />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="habilidades" className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto">
+                <SkillEditor skills={skills} onChange={setSkills} />
               </TabsContent>
 
               <TabsContent value="atributos" className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto">

@@ -56,7 +56,10 @@ const attributeSchema = z.object({
 
 const skillSchema = z.object({
   name: z.string().min(1, "Nome da habilidade é obrigatório"),
-  cost: z.number().int().min(0).default(0),
+  type: z.enum(["passiva", "ativa", "ataque", "especial"]).default("ativa"),
+  cost: z.string().optional(),
+  damage: z.string().optional(),
+  cooldown: z.string().optional(),
   description: z.string().optional(),
 });
 
