@@ -230,3 +230,10 @@
 - [x] Usar personagem vinculado do lobby em vez de seletor
 - [x] Adicionar opção "Nenhum personagem" ao vincular
 - [x] Mostrar aba de dados só quando personagem vinculado (exceto mestre)
+
+
+## Correções Finais de DiceRollPage (Novo Foco)
+
+- [x] Limpar personagem quando jogador troca para mestre
+- [x] Substituir dropdown de atributos por botões sempre visíveis
+- [x] Adicionar destaque verde para atributo selecionado

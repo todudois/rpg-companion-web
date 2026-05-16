@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useRPG } from "@/contexts/RPGContext";
@@ -284,25 +284,49 @@ export default function DiceRollPage() {
             </Card>
           </div>
 
-          {/* Attribute Selection */}
+          {/* Attribute Selection - Always Visible Buttons */}
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader className="pb-2 sm:pb-3">
               <CardTitle className="text-xs sm:text-sm text-amber-500 font-serif">Atributo (Bônus/Dado)</CardTitle>
             </CardHeader>
             <CardContent>
-              <Select value={selectedAttribute} onValueChange={setSelectedAttribute}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-300">
-                  <SelectValue placeholder="Selecione um atributo" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {ATTRIBUTES.map((attr) => (
-                    <SelectItem key={attr.key} value={attr.key}>
-                      {attr.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {/* None Button */}
+                <Button
+                  onClick={() => setSelectedAttribute("none")}
+                  variant={selectedAttribute === "none" ? "default" : "outline"}
+                  className={`text-xs font-bold py-2 h-auto ${
+                    selectedAttribute === "none"
+                      ? "bg-green-500 hover:bg-green-600 text-white border-green-500"
+                      : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  Nenhum
+                </Button>
+                {/* Attribute Buttons */}
+                {ATTRIBUTES.map((attr) => {
+                  const value = characterAttributes?.[attr.key as keyof typeof characterAttributes] || 0;
+                  return (
+                    <Button
+                      key={attr.key}
+                      onClick={() => setSelectedAttribute(attr.key)}
+                      variant={selectedAttribute === attr.key ? "default" : "outline"}
+                      className={`text-xs font-bold py-2 h-auto ${
+                        selectedAttribute === attr.key
+                          ? "bg-green-500 hover:bg-green-600 text-white border-green-500"
+                          : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>{attr.short}</span>
+                        <span className={value >= 0 ? "text-green-300" : "text-red-300"}>
+                          {value >= 0 ? "+" : ""}{value}
+                        </span>
+                      </div>
+                    </Button>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
 

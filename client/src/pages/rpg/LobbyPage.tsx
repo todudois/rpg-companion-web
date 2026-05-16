@@ -28,6 +28,10 @@ export default function LobbyPage() {
         role: newRole as "mestre" | "jogador" | "espectador" | "indefinido",
       });
       setActiveRole(newRole as any);
+      // Limpar personagem ao trocar para mestre
+      if (newRole === "mestre") {
+        setActiveCharacterId(null);
+      }
       refetchUsers();
     } catch (error: any) {
       console.error("Erro ao atualizar role:", error);
