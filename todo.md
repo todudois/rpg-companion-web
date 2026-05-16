@@ -214,3 +214,11 @@
 - [x] Implementar Vigor/Mana corretamente nos cards
 - [x] Adicionar botão Delete para imagens no canvas
 - [x] Criar página de detalhes do personagem com habilidades
+
+
+## Correções de DiceRollPage (Novo Foco)
+
+- [x] Investigar e corrigir bug do histórico com múltiplos 1d20 aparecendo como 15
+- [x] Colocar número de dados e bônus na mesma linha (cell layout)
+- [x] Reduzir altura do container de tipo de dano
+- [x] Reorganizar página: personagem no topo com atributos, habilidades expansíveis embaixo

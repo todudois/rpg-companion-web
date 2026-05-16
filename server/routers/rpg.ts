@@ -92,7 +92,8 @@ export const rpgRouter = router({
         if (character.userId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
-        return character;
+        const skills = await getCharacterSkills(input.id);
+        return { ...character, skills };
       }),
 
     create: protectedProcedure
