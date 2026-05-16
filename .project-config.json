@@ -1,0 +1,43 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://36eXS2A9Mgd6X9L.root:w36sao872RU3MDZMpxqo@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/P8rqcUdCnCfPvNhiFy3XM3?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310419663028513563/P8rqcUdCnCfPvNhiFy3XM3",
+    "access_key_id": "ASIAZV3A2ECZLTI7LGAK",
+    "secret_access_key": "he2dlOA46WdYFhAK5GtVlgAl/rfkErcIXewLATle",
+    "session_token": "IQoJb3JpZ2luX2VjEMf//////////wEaCXVzLWVhc3QtMSJHMEUCIQC3ifcgjbwpoWaTp7v055CarS7NLi/CuNluZgxaGl6DsgIgQcmD4tI0JaXBUKNzhy+WJUDQkBgL7QFQ0VnnoF1jJA0q/wMIkP//////////ARAEGgw2NjUzODYwOTg4NjYiDCQ5OD6m7YIHdAR62irTA+n+vZESUvItTHrduPV6bKxM4S0fEMYdrNvTs2IY9CyxhYfBelxZOCDTGR66WdiASwQgoRXQxGV0al4BULkT19j0gVYPocJhPaQv995RDn7RyP/fydWB+z2jEpmAos6b/OkKfxEnFStsFHRjHsuMhuH7bAxImCX3A/Rr2xGIY7VZWNbHDCOZRK3sYc4cnyboSr+n/ZWiiZPfLI2jN1+uVy6Pkuo8WbRPlCDoFA1/DrrYwNR3fs3PAtS+TEjN6lIcSrm+KcgYx2YF8tG5h1Rx3khexMBmAb5wcBQFkJ5w4ZMNucKFih39uBVuFbU4mY+eZE+mdK/4jbRozFhYxVKU+0RpBnWjvFSn7KaocTit9BO8mqAzIeHXZUybapxzl8hOlw/RZCm1cn5t4+U5hppKM3XJC4rq8Cab8AnnIoSAZA9QlmPJtkHa/3Z/VlSX3sTgfabXWM+p5B5y5Pd+xVx5wlQaA3seOjhnId5cb6K+aTio2q+wGMEvAUYxtUIhcR3o+ChfXCZPoNQc1uJODRoOUe0KJeRd0xIIL4o8EqV5Jr394GnQ3YnJhNnJmVGvhhfGhGHYD/FsaKWVH5tW4S6Eb/32Mww0Yr5IjNVi84NACGdM90VTMK+CotAGOp0BVcq9BzENwzpP7GNd+z727O0kDHzJpPdYjqV/yHc0uHU20LrLoKLAOWX6JTDk9NETDZP+3UE1bByCYmgKYUoTxX0TS5vS7tVXrZM6p26tIFTHaeQyYUW579Jpn2x6bg7juYJLGrPxTWHw0wU833sss0HeCGAV89vf0P0Y3U2bee/dIiZfkRD5lsdzLHKIOcxE3jTW5D6BNcPne2fdvg==",
+    "expiration": "2026-05-17T02:37:35.000Z"
+  },
+  "name": "rpg-companion-web",
+  "path": "/home/ubuntu/rpg-companion-web",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "DxE969nVMyN5waXoR9toF9",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "ZwaBK3KrhBk9Pjv5JxAvc7",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "Heitor Monteiro",
+    "OWNER_OPEN_ID": "9c6WPn2nPK9Sw4HphsS5XM",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "bbd2b01b-4c8e-4061-aa0b-2b17c040a58a",
+    "VITE_APP_ID": "P8rqcUdCnCfPvNhiFy3XM3",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "RPG Companion - Site Permanente",
+    "VITE_FRONTEND_FORGE_API_KEY": "9ggFGHha86FN3vBiYk8Mvp",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}
