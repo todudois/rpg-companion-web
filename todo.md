@@ -237,3 +237,10 @@
 - [x] Limpar personagem quando jogador troca para mestre
 - [x] Substituir dropdown de atributos por botões sempre visíveis
 - [x] Adicionar destaque verde para atributo selecionado
+
+
+## Link de Referência do Manus (Novo)
+
+- [x] Adicionar link de referência na página de login (Home.tsx)
+- [x] Colocar link em local visível para novos usuários
+- [x] Testar se link funciona corretamente

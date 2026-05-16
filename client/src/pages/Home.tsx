@@ -43,6 +43,20 @@ export default function Home() {
             >
               Fazer Login com Manus
             </Button>
+            
+            {/* Referral Link */}
+            <div className="mt-8 pt-6 border-t border-slate-700">
+              <p className="text-xs text-slate-400 mb-3">Novo no Manus? Use o link de referência:</p>
+              <a
+                href="https://manus.im/invitation/SEVJXTU9OIYGWD?utm_source=invitation&utm_medium=social&utm_campaign=copy_link"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-amber-400 hover:text-amber-300 text-sm font-semibold rounded transition-colors break-all"
+              >
+                Criar Conta com Referência
+              </a>
+              <p className="text-xs text-slate-500 mt-2">Você ganha 500 créditos bônus! 🎁</p>
+            </div>
           </div>
         </div>
       </div>
