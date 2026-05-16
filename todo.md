@@ -196,3 +196,12 @@
 - [x] Criar editor de habilidades com tipos (passiva, ativa, ataque, especial)
 - [x] Criar painel de visualização de habilidades com expandir/colapsar
 - [x] Aplicar estilos de habilidades (cores por tipo, ícones, badges)
+
+
+## Correções Urgentes (Novo Foco)
+
+- [x] Corrigir textos escuros para cinza/branco em todo o app ("vincular seu personagem", etc)
+- [x] Implementar persistência completa de habilidades (salvar e carregar)
+- [x] Corrigir visualização e salvamento de bônus de atributos
+- [x] Adicionar opção de escolher entre Vigor ou Mana
+- [x] Criar tela de visualização de habilidades do personagem

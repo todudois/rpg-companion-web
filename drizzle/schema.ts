@@ -40,6 +40,7 @@ export const characters = mysqlTable("characters", {
   hpMax: int("hpMax").default(10).notNull(),
   vigor: int("vigor").default(0).notNull(),
   vigorMax: int("vigorMax").default(0).notNull(),
+  vigorType: mysqlEnum("vigorType", ["vigor", "mana"]).default("vigor").notNull(),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

@@ -1,0 +1,1 @@
+ALTER TABLE `characters` ADD `vigorType` enum('vigor','mana') DEFAULT 'vigor' NOT NULL;

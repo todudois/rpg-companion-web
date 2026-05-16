@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +63,7 @@ export default function CharactersPage() {
     hpMax: 10,
     vigor: 0,
     vigorMax: 0,
+    vigorType: "vigor" as "vigor" | "mana",
     notes: "",
   });
 
@@ -91,6 +91,12 @@ export default function CharactersPage() {
     { enabled: !!editingId }
   );
   const upsertAttributesMutation = trpc.rpg.attributes.upsert.useMutation();
+  const createSkillMutation = trpc.rpg.skills.create.useMutation();
+  const deleteSkillMutation = trpc.rpg.skills.delete.useMutation();
+  const { data: skillsData } = trpc.rpg.skills.list.useQuery(
+    { characterId: editingId || 0 },
+    { enabled: !!editingId }
+  );
 
   // Load attributes for all characters
   useEffect(() => {
@@ -120,11 +126,21 @@ export default function CharactersPage() {
     }
   }, [attributesData, editingId]);
 
+  // Carregar habilidades quando skillsData chegar
+  useEffect(() => {
+    if (skillsData && editingId) {
+      setSkills(skillsData);
+    }
+  }, [skillsData, editingId]);
+
   const handleOpenDialog = (character?: any) => {
     if (character) {
       setEditingId(character.id);
-      setFormData(character);
-      // useEffect vai carregar os atributos quando attributesData chegar
+      setFormData({
+        ...character,
+        vigorType: character.vigorType || "vigor",
+      });
+      // useEffect vai carregar os atributos e habilidades quando os dados chegarem
     } else {
       setEditingId(null);
       setFormData({
@@ -136,6 +152,7 @@ export default function CharactersPage() {
         hpMax: 10,
         vigor: 0,
         vigorMax: 0,
+        vigorType: "vigor",
         notes: "",
       });
       setAttributes({
@@ -149,6 +166,7 @@ export default function CharactersPage() {
         sor: 0,
         fe: 0,
       });
+      setSkills([]);
     }
     setIsOpen(true);
   };
@@ -177,15 +195,35 @@ export default function CharactersPage() {
       }
 
       if (characterId) {
+        // Salvar atributos
         await upsertAttributesMutation.mutateAsync({
           characterId,
           data: attributes,
         });
+
+        // Salvar habilidades
+        // Deletar habilidades antigas
+        const existingSkills = await utils.rpg.skills.list.fetch({ characterId });
+        for (const skill of existingSkills || []) {
+          await deleteSkillMutation.mutateAsync({ id: skill.id });
+        }
+        // Criar novas habilidades
+        for (const skill of skills) {
+          if (skill.name.trim()) {
+            const { id, ...skillData } = skill;
+            await createSkillMutation.mutateAsync({
+              characterId,
+              data: skillData,
+            });
+          }
+        }
       }
 
       await utils.rpg.characters.list.invalidate();
+      await utils.rpg.skills.list.invalidate();
       setIsOpen(false);
     } catch (error) {
+      console.error("Erro ao salvar personagem:", error);
       toast.error("Erro ao salvar personagem");
     }
   };
@@ -287,8 +325,8 @@ export default function CharactersPage() {
                   {[
                     { key: "hp", label: "❤️ Vida" },
                     { key: "hpMax", label: "❤️ Vida Máx" },
-                    { key: "vigor", label: "⚡ Vigor" },
-                    { key: "vigorMax", label: "⚡ Vigor Máx" },
+                    { key: "vigor", label: `${formData.vigorType === "mana" ? "🔵" : "⚡"} ${formData.vigorType === "mana" ? "Mana" : "Vigor"}` },
+                    { key: "vigorMax", label: `${formData.vigorType === "mana" ? "🔵" : "⚡"} ${formData.vigorType === "mana" ? "Mana" : "Vigor"} Máx` },
                   ].map(({ key, label }) => (
                     <div key={key}>
                       <Label className="text-slate-300 text-xs">{label}</Label>
@@ -302,6 +340,34 @@ export default function CharactersPage() {
                       />
                     </div>
                   ))}
+                </div>
+
+                <div>
+                  <Label className="text-slate-300 text-sm">Tipo de Recurso</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      onClick={() => setFormData({ ...formData, vigorType: "vigor" })}
+                      variant={formData.vigorType === "vigor" ? "default" : "outline"}
+                      className={`flex-1 text-xs sm:text-sm ${
+                        formData.vigorType === "vigor"
+                          ? "bg-amber-500 hover:bg-amber-600 text-slate-900"
+                          : "border-slate-600 text-slate-300"
+                      }`}
+                    >
+                      ⚡ Vigor
+                    </Button>
+                    <Button
+                      onClick={() => setFormData({ ...formData, vigorType: "mana" })}
+                      variant={formData.vigorType === "mana" ? "default" : "outline"}
+                      className={`flex-1 text-xs sm:text-sm ${
+                        formData.vigorType === "mana"
+                          ? "bg-blue-500 hover:bg-blue-600 text-white"
+                          : "border-slate-600 text-slate-300"
+                      }`}
+                    >
+                      🔵 Mana
+                    </Button>
+                  </div>
                 </div>
 
                 <div>
@@ -358,10 +424,10 @@ export default function CharactersPage() {
             <div className="flex flex-col sm:flex-row gap-2 pt-4">
               <Button
                 onClick={handleSave}
-                disabled={createCharMutation.isPending || updateCharMutation.isPending || upsertAttributesMutation.isPending}
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 text-sm"
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-sm"
+                disabled={createCharMutation.isPending || updateCharMutation.isPending}
               >
-                💾 Salvar
+                {createCharMutation.isPending || updateCharMutation.isPending ? "Salvando..." : "Salvar"}
               </Button>
               <Button
                 onClick={() => setIsOpen(false)}
@@ -376,113 +442,102 @@ export default function CharactersPage() {
       </div>
 
       {/* Characters Grid */}
-      <div className="grid gap-3 sm:gap-4">
-        {charactersWithAttributes.map(({ character: char, attributes: charAttrs }) => {
-          const classColor = getClassColor(char.classe);
-          const hpPercent = (char.hp / char.hpMax) * 100;
-          const vigorPercent = char.vigorMax > 0 ? (char.vigor / char.vigorMax) * 100 : 0;
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {charactersWithAttributes.map(({ character, attributes: charAttrs }) => {
+          const classColor = getClassColor(character.classe);
+          const firstAttrs = ATTRIBUTES.slice(0, 4);
 
           return (
-            <Card
-              key={char.id}
-              className={`${classColor.bg} border-2 ${classColor.border} bg-gradient-to-r from-slate-800 to-slate-900 overflow-hidden transition-all hover:shadow-lg hover:shadow-amber-500/20`}
+            <div
+              key={character.id}
+              className={`${classColor.bg} border-2 ${classColor.border} rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 hover:shadow-lg transition-shadow`}
             >
-              <CardHeader className="pb-3 sm:pb-4">
-                <div className="flex justify-between items-start gap-2 min-w-0">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <CardTitle className={`text-base sm:text-lg font-bold ${classColor.text} truncate`}>
-                        {char.name}
-                      </CardTitle>
-                      <span className="bg-amber-500/20 border border-amber-600 text-amber-300 px-2 py-1 rounded text-xs font-semibold flex-shrink-0">
-                        Nv.{char.nivel}
-                      </span>
-                    </div>
-                    <p className={`text-xs sm:text-sm ${classColor.text} truncate font-medium`}>
-                      {char.classe} • {char.raca}
-                    </p>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      onClick={() => handleOpenDialog(char)}
-                      size="sm"
-                      variant="outline"
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700 w-8 h-8 p-0"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      onClick={() => handleDelete(char.id)}
-                      size="sm"
-                      variant="outline"
-                      className="border-red-600 text-red-400 hover:bg-red-900 w-8 h-8 p-0"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className={`font-bold text-sm sm:text-base ${classColor.text} truncate`}>{character.name}</h3>
+                  <p className="text-xs text-slate-400 truncate">
+                    Nv.{character.nivel} {character.classe} • {character.raca}
+                  </p>
                 </div>
-              </CardHeader>
+                <div className="flex gap-1 flex-shrink-0">
+                  <Button
+                    onClick={() => handleOpenDialog(character)}
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0 text-amber-500 hover:bg-slate-700"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handleDelete(character.id)}
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0 text-red-400 hover:bg-slate-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
 
-              <CardContent className="space-y-3">
-                {/* Health Bar */}
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-xs text-slate-300 font-semibold">❤️ Vida</p>
-                    <p className="text-xs text-slate-200 font-mono">{char.hp}/{char.hpMax}</p>
-                  </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-red-500 to-red-400 h-full transition-all"
-                      style={{ width: `${Math.max(0, hpPercent)}%` }}
-                    />
-                  </div>
+              {/* Life and Vigor */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-red-300">❤️ Vida</span>
+                  <span className="font-bold text-red-300">{character.hp}/{character.hpMax}</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-red-600 to-red-500 h-full"
+                    style={{ width: `${(character.hp / character.hpMax) * 100}%` }}
+                  />
                 </div>
 
-                {/* Vigor Bar */}
-                {char.vigorMax > 0 && (
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-xs text-slate-300 font-semibold">⚡ Vigor</p>
-                      <p className="text-xs text-slate-200 font-mono">{char.vigor}/{char.vigorMax}</p>
-                    </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-yellow-500 to-yellow-400 h-full transition-all"
-                        style={{ width: `${Math.max(0, vigorPercent)}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center justify-between text-xs mt-2">
+                  <span className={character.vigorType === "mana" ? "text-blue-300" : "text-amber-300"}>
+                    {character.vigorType === "mana" ? "🔵 Mana" : "⚡ Vigor"}
+                  </span>
+                  <span className={`font-bold ${character.vigorType === "mana" ? "text-blue-300" : "text-amber-300"}`}>
+                    {character.vigor}/{character.vigorMax}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                  <div
+                    className={`bg-gradient-to-r h-full ${
+                      character.vigorType === "mana"
+                        ? "from-blue-600 to-blue-500"
+                        : "from-amber-600 to-amber-500"
+                    }`}
+                    style={{ width: `${(character.vigor / character.vigorMax) * 100}%` }}
+                  />
+                </div>
+              </div>
 
-                {/* Attributes Preview */}
-                <div className="grid grid-cols-4 gap-1 pt-1">
-                  {[
-                    { key: "for", label: "FOR" },
-                    { key: "des", label: "DES" },
-                    { key: "con", label: "CON" },
-                    { key: "int", label: "INT" },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="bg-slate-700/50 rounded p-1 text-center">
-                      <p className="text-xs text-slate-400">{label}</p>
-                      <p className={`text-xs font-bold ${getAttributeColor((charAttrs as any)[key] || 0)}`}>
-                        {(charAttrs as any)[key] || 0 >= 0 ? "+" : ""}{(charAttrs as any)[key] || 0}
+              {/* Attributes Preview */}
+              <div className="grid grid-cols-4 gap-1">
+                {firstAttrs.map((attr) => {
+                  const value = charAttrs?.[attr.key as keyof typeof charAttrs] || 0;
+                  return (
+                    <div key={attr.key} className="bg-slate-700 rounded p-1 text-center">
+                      <p className="text-xs text-slate-400">{attr.short}</p>
+                      <p className={`font-bold text-xs ${getAttributeColor(value)}`}>
+                        {value > 0 ? "+" : ""}
+                        {value}
                       </p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
 
-      {!characters || (characters.length === 0 && (
-        <Card className="bg-slate-800 border-slate-700">
-          <CardContent className="py-8 sm:py-12 text-center text-slate-400 text-sm">
-            <p>Nenhum personagem criado ainda. Crie um novo personagem para começar!</p>
-          </CardContent>
-        </Card>
-      ))}
+      {charactersWithAttributes.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-slate-400">Nenhum personagem criado ainda</p>
+        </div>
+      )}
     </div>
   );
 }

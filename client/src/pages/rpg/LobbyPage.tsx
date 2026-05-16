@@ -46,7 +46,7 @@ export default function LobbyPage() {
         </CardHeader>
         <CardContent className="space-y-4 sm:space-y-6">
           <div>
-            <h3 className="text-base sm:text-lg font-semibold mb-3">Escolha seu papel:</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 text-slate-200">Escolha seu papel:</h3>
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <Button
                 onClick={() => handleRoleChange("mestre")}
@@ -94,7 +94,7 @@ export default function LobbyPage() {
           {/* Character Selection for Players */}
           {activeRole === "jogador" && (
             <div className="border-t border-slate-700 pt-4 sm:pt-6">
-              <h3 className="text-base sm:text-lg font-semibold mb-3">Vincular seu personagem:</h3>
+              <h3 className="text-base sm:text-lg font-semibold mb-3 text-slate-200">Vincular seu personagem:</h3>
               <Select value={activeCharacterId?.toString() || ""} onValueChange={(val) => setActiveCharacterId(val ? parseInt(val) : null)}>
                 <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-100 w-full text-sm">
                   <SelectValue placeholder="Selecione um personagem" />

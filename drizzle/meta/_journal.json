@@ -50,6 +50,13 @@
       "when": 1778967180754,
       "tag": "0006_yielding_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1778968106610,
+      "tag": "0007_lucky_pixie",
+      "breakpoints": true
     }
   ]
 }

@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/select";
 
 export interface Skill {
-  id: number;
+  id?: number;
   name: string;
   type: "passiva" | "ativa" | "ataque" | "especial";
-  cost?: string;
-  damage?: string;
-  cooldown?: string;
-  description?: string;
+  cost?: string | null;
+  damage?: string | null;
+  cooldown?: string | null;
+  description?: string | null;
 }
 
 const SKILL_TYPES = {
