@@ -437,7 +437,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     });
   }, [selectedImageId, drawableImages, readOnly]);
 
- // Load initial canvas data for players only
+// Load initial canvas data for players only
 useEffect(() => {
   if (!readOnly || !savedCanvas?.canvasData) return;
   
@@ -465,7 +465,7 @@ useEffect(() => {
   img.src = savedCanvas.canvasData;
 }, [readOnly, savedCanvas?.canvasData, drawableImages]);
 
-  // Load images from savedCanvas.imagesData when canvas is fetched
+ // Load images from savedCanvas.imagesData when canvas is fetched
   useEffect(() => {
     if (!savedCanvas?.imagesData) return;
     
