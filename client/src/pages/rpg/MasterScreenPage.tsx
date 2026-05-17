@@ -657,10 +657,23 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-          const ctx = canvas.getContext("2d", { alpha: true });
-        if (!ctx) return;
-        ctx.fillStyle = "#111827";
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    
+    // Clear main canvas
+    ctx.fillStyle = "#111827";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Clear drawings canvas
+    if (drawingsCanvasRef.current) {
+      const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+      if (drawCtx) {
+        drawCtx.fillStyle = "#111827";
+        drawCtx.fillRect(0, 0, drawingsCanvasRef.current.width, drawingsCanvasRef.current.height);
+        cleanDrawingsRef.current = drawCtx.getImageData(0, 0, drawingsCanvasRef.current.width, drawingsCanvasRef.current.height);
+      }
+    }
+    
     setDrawableImages([]);
     setSelectedImageId(null);
     // Save to history and sync with players

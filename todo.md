@@ -331,6 +331,6 @@
 ## Bugs de Canvas (Sessão Atual)
 
 - [x] Borracha não apaga corretamente - desenha com cor de fundo em vez de apagar
-- [x] Imagens selecionadas deletam desenhos e formas geométricas do canvas
+- [x] Imagens selecionadas deletam desenhos e formas geométricas do canvas (CORRIGIDO: separação de useEffect para seleção)
 
 - [x] Mover imagens replica a imagem várias vezes ao longo do movimento (CORRIGIDO: usar cleanDrawingsRef para manter estado limpo)
