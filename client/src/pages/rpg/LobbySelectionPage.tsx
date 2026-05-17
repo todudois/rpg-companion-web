@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useRPG } from "@/contexts/RPGContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Lock, Users, Trash2, Copy, Plus, Edit2 } from "lucide-react";
@@ -26,6 +27,7 @@ const ATTRIBUTES = [
 
 export default function LobbySelectionPage() {
   const { setActiveMasterId, setActiveRole, setActiveLobbyId, setIsLobbyCreator } = useRPG();
+  const { user } = useAuth();
   const [createName, setCreateName] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [joinCode, setJoinCode] = useState("");
@@ -148,8 +150,10 @@ export default function LobbySelectionPage() {
       setJoinPassword("");
       if (result?.masterId) setActiveMasterId(result.masterId);
       if (result?.id) setActiveLobbyId(result.id);
-      setActiveRole("jogador");
-      setIsLobbyCreator(false);
+      // Check if user is the creator (master)
+      const isCreator = result?.masterId === user?.id;
+      setActiveRole(isCreator ? "mestre" : "jogador");
+      setIsLobbyCreator(isCreator);
     } catch (error: any) {
       toast.error(error.message || "Erro ao entrar no lobby");
     } finally {

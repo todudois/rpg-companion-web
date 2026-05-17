@@ -322,3 +322,8 @@
 ## Bugs Encontrados em Produção
 
 - [x] Erro UPDATE em masterCanvasData - registros não encontrados ao salvar canvas
+
+## Melhorias Solicitadas (Nova Sessão)
+
+- [x] Desconectar jogadores de lobbys quando fecham o site (usar beforeunload)
+- [x] Corrigir bug: usuário que criou lobby entra como jogador em servidor público (deve entrar como mestre)

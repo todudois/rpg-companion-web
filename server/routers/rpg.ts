@@ -319,7 +319,9 @@ export const rpgRouter = router({
         if (!passwordMatch) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Senha incorreta" });
         }
-        await upsertSessionParticipant(ctx.user.id, lobby.id, null, "jogador");
+        // If user is the creator, set as master; otherwise set as player
+        const role = ctx.user.id === lobby.masterId ? "mestre" : "jogador";
+        await upsertSessionParticipant(ctx.user.id, lobby.id, null, role);
         // Get the master user ID for this lobby
         const master = await getMasterInLobby(lobby.id);
         return { ...lobby, masterId: master?.userId || null };

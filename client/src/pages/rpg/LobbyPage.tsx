@@ -5,6 +5,7 @@ import { useRPG } from "@/contexts/RPGContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Users, Crown, Sword, Eye } from "lucide-react";
+import { useEffect } from "react";
 
 export default function LobbyPage() {
   const { user } = useAuth();
@@ -15,6 +16,40 @@ export default function LobbyPage() {
     { enabled: !!activeLobbyId }
   );
   const updateRoleMutation = trpc.rpg.session.updateRole.useMutation();
+  const leaveMutation = trpc.rpg.session.leave.useMutation();
+
+  // Desconectar jogador ao fechar o site (beforeunload)
+  // Diferencia entre fechar e recarregar usando flag
+  useEffect(() => {
+    let isReloading = false;
+
+    const handleBeforeUnload = () => {
+      if (activeLobbyId && user?.id && !isReloading) {
+        navigator.sendBeacon(
+          '/api/leave-lobby',
+          JSON.stringify({ userId: user.id, lobbyId: activeLobbyId })
+        );
+      }
+    };
+
+    // Detectar reload: Ctrl+R, Cmd+R, F5
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        isReloading = true;
+      }
+      if (e.key === 'F5') {
+        isReloading = true;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeLobbyId, user?.id]);
 
   const selectedCharacter = characters?.find((c) => c.id === activeCharacterId);
   const hasMaster = allUsers?.some(u => u.role === "mestre");
