@@ -259,3 +259,11 @@
 - [x] Verificar se há polling ou WebSocket para atualizar canvas em tempo real
 - [x] Corrigir sistema de sincronização de desenhos
 - [x] Testar se desenhos aparecem para todos os jogadores
+
+
+## Canvas Avançado (Novo)
+
+- [x] Implementar histórico de ações (undo/redo)
+- [x] Implementar sistema de camadas (frente/trás)
+- [x] Adicionar ferramentas de desenho avançadas (retângulo, círculo, linha)
+- [x] Testar todas as funcionalidades

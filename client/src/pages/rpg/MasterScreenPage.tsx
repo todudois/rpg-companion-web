@@ -6,7 +6,7 @@ import { useRPG } from "@/contexts/RPGContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Users, Crown, Sword, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Users, Crown, Sword, ChevronDown, ChevronUp, RotateCcw, RotateCw } from "lucide-react";
 
 const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7", "#f97316", "#ffffff", "#64748b"];
 
@@ -21,6 +21,12 @@ interface DrawableImage {
   y: number;
   width: number;
   height: number;
+  zIndex?: number;
+}
+
+interface CanvasState {
+  canvasData: string;
+  images: DrawableImage[];
 }
 
 export default function MasterScreenPage({ readOnly = false }: MasterScreenPageProps) {
@@ -39,11 +45,12 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   );
   const saveCanvasMutation = trpc.rpg.masterCanvas.save.useMutation();
 
-  const [drawTool, setDrawTool] = useState<"pen" | "eraser" | "select">("pen");
+  const [drawTool, setDrawTool] = useState<"pen" | "eraser" | "select" | "rectangle" | "circle" | "line">("pen");
   const [drawColor, setDrawColor] = useState("#ef4444");
   const [brushSize, setBrushSize] = useState(5);
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null);
+  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(Date.now());
   const [showParticipants, setShowParticipants] = useState(true);
@@ -52,6 +59,69 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
   const [resizeMode, setResizeMode] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [history, setHistory] = useState<CanvasState[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+  const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save state to history
+  const saveToHistory = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const canvasData = canvas.toDataURL("image/png");
+    const newState: CanvasState = {
+      canvasData,
+      images: drawableImages
+    };
+
+    // Remove any states after current index (if user made changes after undo)
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  // Undo action
+  const handleUndo = () => {
+    if (historyIndex <= 0) return;
+    const newIndex = historyIndex - 1;
+    setHistoryIndex(newIndex);
+    restoreState(history[newIndex]);
+  };
+
+  // Redo action
+  const handleRedo = () => {
+    if (historyIndex >= history.length - 1) return;
+    const newIndex = historyIndex + 1;
+    setHistoryIndex(newIndex);
+    restoreState(history[newIndex]);
+  };
+
+  // Restore canvas to a previous state
+  const restoreState = (state: CanvasState) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+      setDrawableImages(state.images);
+    };
+    img.src = state.canvasData;
+  };
+
+  // Debounced history save
+  const saveToHistoryDebounced = () => {
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+    historyTimeoutRef.current = setTimeout(() => {
+      saveToHistory();
+    }, 300);
+  };
 
   // Debounced save function to avoid too many requests
   const saveCanvasDebounced = () => {
@@ -129,8 +199,9 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     ctx.fillStyle = "#111827";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw all images
-    drawableImages.forEach((img) => {
+    // Draw all images sorted by z-index
+    const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    sortedImages.forEach((img) => {
       ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
 
       // Draw selection box if selected
@@ -227,6 +298,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     } else {
       setIsDrawing(true);
       setLastPos(pos);
+      setStartPos(pos); // Store initial position for geometric shapes
     }
   };
 
@@ -270,8 +342,31 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       ctx.lineJoin = "round";
 
       if (drawTool === "eraser") {
-        ctx.clearRect(lastPos.x - brushSize / 2, lastPos.y - brushSize / 2, brushSize, brushSize);
-      } else {
+        ctx.clearRect(pos.x - brushSize / 2, pos.y - brushSize / 2, brushSize, brushSize);
+      } else if (drawTool === "rectangle" && startPos) {
+        // Draw rectangle preview from start position
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth = brushSize;
+        const width = pos.x - startPos.x;
+        const height = pos.y - startPos.y;
+        ctx.strokeRect(startPos.x, startPos.y, width, height);
+      } else if (drawTool === "circle" && startPos) {
+        // Draw circle preview from start position
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth = brushSize;
+        const radius = Math.sqrt(Math.pow(pos.x - startPos.x, 2) + Math.pow(pos.y - startPos.y, 2));
+        ctx.beginPath();
+        ctx.arc(startPos.x, startPos.y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+      } else if (drawTool === "line" && startPos) {
+        // Draw line preview from start position
+        ctx.strokeStyle = drawColor;
+        ctx.lineWidth = brushSize;
+        ctx.beginPath();
+        ctx.moveTo(startPos.x, startPos.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      } else if (drawTool === "pen") {
         ctx.strokeStyle = drawColor;
         ctx.beginPath();
         ctx.moveTo(lastPos.x, lastPos.y);
@@ -288,8 +383,11 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     setDraggedImageId(null);
     setResizeMode(null);
     setLastPos(null);
+    setStartPos(null);
     // Auto-save canvas after drawing
     saveCanvasDebounced();
+    // Save to history
+    saveToHistoryDebounced();
   };
 
   const handleClearCanvas = () => {
@@ -305,6 +403,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setDrawableImages([]);
     setSelectedImageId(null);
+    // Save to history
+    saveToHistory();
   };
 
   const handleLoadImage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -328,6 +428,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           y: centerY,
           width: Math.min(200, img.width),
           height: Math.min(200, img.height),
+          zIndex: Math.max(...drawableImages.map(i => i.zIndex || 0), 0) + 1,
         };
         setDrawableImages([...drawableImages, newImage]);
         setSelectedImageId(newImage.id);
@@ -379,6 +480,28 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         <CardContent className="pt-4">
           {!readOnly ? (
             <div className="space-y-3 sm:space-y-4">
+              {/* Undo/Redo Row */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  className="px-3 py-2 rounded text-sm font-medium border border-slate-600 text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  title="Desfazer (Ctrl+Z)"
+                >
+                  <RotateCcw className="w-4 h-4 inline mr-1" />
+                  Desfazer
+                </button>
+                <button
+                  onClick={handleRedo}
+                  disabled={historyIndex >= history.length - 1}
+                  className="px-3 py-2 rounded text-sm font-medium border border-slate-600 text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  title="Refazer (Ctrl+Y)"
+                >
+                  <RotateCw className="w-4 h-4 inline mr-1" />
+                  Refazer
+                </button>
+              </div>
+
               {/* Tools Row */}
               <div className="flex flex-wrap gap-2">
                 <button
@@ -395,11 +518,41 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                   onClick={() => setDrawTool("eraser")}
                   className={`px-3 py-2 rounded text-sm font-medium transition-colors flex-shrink-0 ${
                     drawTool === "eraser"
-                      ? "bg-amber-500 hover:bg-amber-600 text-slate-900"
+                      ? "bg-red-500 hover:bg-red-600 text-white"
                       : "border border-slate-600 text-slate-300 hover:bg-slate-700"
                   }`}
                 >
-                  Borracha
+                  🧹 Borracha
+                </button>
+                <button
+                  onClick={() => setDrawTool("rectangle")}
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex-shrink-0 ${
+                    drawTool === "rectangle"
+                      ? "bg-purple-500 hover:bg-purple-600 text-white"
+                      : "border border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  ▭ Retângulo
+                </button>
+                <button
+                  onClick={() => setDrawTool("circle")}
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex-shrink-0 ${
+                    drawTool === "circle"
+                      ? "bg-purple-500 hover:bg-purple-600 text-white"
+                      : "border border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  ● Círculo
+                </button>
+                <button
+                  onClick={() => setDrawTool("line")}
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors flex-shrink-0 ${
+                    drawTool === "line"
+                      ? "bg-purple-500 hover:bg-purple-600 text-white"
+                      : "border border-slate-600 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  / Linha
                 </button>
                 <button
                   onClick={() => setDrawTool("select")}
@@ -466,18 +619,52 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                   Limpar
                 </button>
                 {selectedImageId && (
-                  <button
-                  onClick={() => {
-                    setDrawableImages(drawableImages.filter(img => img.id !== selectedImageId));
-                    setSelectedImageId(null);
-                    toast.success("Imagem deletada!");
-                    // Auto-save after deleting image
-                    saveCanvasDebounced();
-                  }}
-                    className="px-3 py-2 rounded text-sm font-medium border border-red-600 text-red-400 hover:bg-red-900 transition-colors flex-shrink-0"
-                  >
-                    🗑️ Deletar Imagem
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setDrawableImages(drawableImages.map(img => 
+                          img.id === selectedImageId 
+                            ? { ...img, zIndex: Math.max(...drawableImages.map(i => i.zIndex || 0)) + 1 }
+                            : img
+                        ));
+                        saveToHistory();
+                        saveCanvasDebounced();
+                      }}
+                      className="px-3 py-2 rounded text-sm font-medium border border-blue-600 text-blue-400 hover:bg-blue-900 transition-colors flex-shrink-0"
+                      title="Trazer para frente"
+                    >
+                      ⬆️ Frente
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDrawableImages(drawableImages.map(img => 
+                          img.id === selectedImageId 
+                            ? { ...img, zIndex: Math.min(...drawableImages.map(i => i.zIndex || 0)) - 1 }
+                            : img
+                        ));
+                        saveToHistory();
+                        saveCanvasDebounced();
+                      }}
+                      className="px-3 py-2 rounded text-sm font-medium border border-blue-600 text-blue-400 hover:bg-blue-900 transition-colors flex-shrink-0"
+                      title="Enviar para trás"
+                    >
+                      ⬇️ Trás
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDrawableImages(drawableImages.filter(img => img.id !== selectedImageId));
+                        setSelectedImageId(null);
+                        toast.success("Imagem deletada!");
+                        // Auto-save after deleting image
+                        saveCanvasDebounced();
+                        // Save to history
+                        saveToHistory();
+                      }}
+                      className="px-3 py-2 rounded text-sm font-medium border border-red-600 text-red-400 hover:bg-red-900 transition-colors flex-shrink-0"
+                    >
+                      🗑️ Deletar Imagem
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={handleSaveCanvas}
