@@ -64,6 +64,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hadDrawingRef = useRef<boolean>(false);
   const isMovingImageRef = useRef<boolean>(false);
+  const cleanDrawingsRef = useRef<ImageData | null>(null); // Bitmap limpo dos desenhos (sem imagens)
   const [history, setHistory] = useState<CanvasState[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -230,17 +231,14 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     if (!ctx) return;
 
     // If we're moving/resizing, use requestAnimationFrame for smooth animation
-    if (isMovingImageRef.current) {
+    if (isMovingImageRef.current && cleanDrawingsRef.current) {
       const animationFrameId = requestAnimationFrame(() => {
-        // Get the current drawing state (without images)
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        
         // Clear canvas with background
         ctx.fillStyle = "#111827";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Restore the drawing data (without images)
-        ctx.putImageData(imageData, 0, 0);
+        // Restore ONLY the clean drawings (without images)
+        ctx.putImageData(cleanDrawingsRef.current!, 0, 0);
         
         // Redraw all images at their current positions
         const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
@@ -266,15 +264,9 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
 
     // Normal redraw (not moving) - full canvas refresh
     const drawContent = () => {
-      // Save current canvas state (drawings)
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      
-      // Clear and redraw: background + saved canvas + images + selection
+      // Clear and redraw: background + images + selection
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Restore the saved drawing data
-      ctx.putImageData(imageData, 0, 0);
       
       // Draw images on top
       const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
@@ -293,6 +285,9 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           ctx.fillRect(img.x + img.width - handleSize, img.y + img.height - handleSize, handleSize, handleSize);
         }
       });
+      
+      // Save clean drawings (without images) for use during movement
+      cleanDrawingsRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
     };
 
     drawContent();
@@ -423,6 +418,32 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     if (drawTool === "select") {
       const imageId = getImageAtPos(pos.x, pos.y);
       if (imageId) {
+        // Save clean state BEFORE starting to move: all images except the one being moved
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext("2d", { alpha: true });
+          if (ctx) {
+            // Create temp canvas to render clean state
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext("2d", { alpha: true });
+            if (tempCtx) {
+              // Draw background
+              tempCtx.fillStyle = "#111827";
+              tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+              // Draw all images except the one being moved
+              const sortedImages = [...drawableImages]
+                .filter(img => img.id !== imageId)
+                .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+              sortedImages.forEach((img) => {
+                tempCtx.drawImage(img.img, img.x, img.y, img.width, img.height);
+              });
+              cleanDrawingsRef.current = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            }
+          }
+        }
+        
         setSelectedImageId(imageId);
         setDraggedImageId(imageId);
         
