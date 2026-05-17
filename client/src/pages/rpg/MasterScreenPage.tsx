@@ -323,7 +323,37 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
 
     drawContent();
-  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData, isMovingImageRef]);
+  }, [drawableImages, readOnly, savedCanvas?.canvasData, isMovingImageRef]);
+
+  // Redraw selection box when selectedImageId changes (without clearing drawings)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || isMovingImageRef.current) return;
+    
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    
+    // Get current canvas state
+    const currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // Restore it (to clear old selection box)
+    ctx.putImageData(currentImageData, 0, 0);
+    
+    // Redraw selection box for currently selected image
+    const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    sortedImages.forEach((img) => {
+      if (img.id === selectedImageId && !readOnly) {
+        ctx.strokeStyle = "#fbbf24";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(img.x, img.y, img.width, img.height);
+
+        // Draw resize handle
+        const handleSize = 10;
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillRect(img.x + img.width - handleSize, img.y + img.height - handleSize, handleSize, handleSize);
+      }
+    });
+  }, [selectedImageId, drawableImages, readOnly]);
 
   // Load initial canvas data for players only
   useEffect(() => {
