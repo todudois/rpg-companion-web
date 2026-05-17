@@ -301,6 +301,21 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         if (drawingsData) {
           ctx.putImageData(drawingsData, 0, 0);
         }
+      } else if (savedCanvas?.canvasData) {
+        // If drawingsCanvas is not initialized but we have savedCanvas, restore from it
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          // Copy to drawingsCanvas for future use
+          if (drawingsCanvasRef.current) {
+            const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+            if (drawCtx) {
+              drawCtx.drawImage(img, 0, 0);
+              cleanDrawingsRef.current = drawCtx.getImageData(0, 0, drawingsCanvasRef.current.width, drawingsCanvasRef.current.height);
+            }
+          }
+        };
+        img.src = savedCanvas.canvasData;
       }
       
       // Draw images on top
