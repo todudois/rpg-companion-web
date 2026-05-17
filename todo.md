@@ -287,3 +287,12 @@
 - [x] Canvas é compartilhado entre lobbies (deve ser único por lobby)
 - [x] Polling não atualiza canvas após primeira sincronização
 - [x] Borracha não funciona corretamente
+
+
+## Bugs Críticos Novos (Regressões)
+
+- [x] Canvas tem desenho persistente que não pode ser apagado
+- [x] Borracha está desenhando com cor em vez de apagar
+- [x] Pop-up em branco aparece ao salvar canvas
+- [x] Canvas não atualiza para jogadores (polling não funciona)
+- [x] Participantes da sessão desapareceram do lado do canvas

@@ -38,10 +38,11 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const fileRef = useRef<HTMLInputElement>(null);
   const imageFileRef = useRef<HTMLInputElement>(null);
   const { data: savedCanvas, refetch } = trpc.rpg.masterCanvas.get.useQuery(
-    { masterId: readOnly ? activeMasterId || undefined : undefined, lobbyId: activeLobbyId || undefined }
+    { masterId: readOnly ? activeMasterId || undefined : undefined, lobbyId: activeLobbyId || undefined },
+    { enabled: !!activeLobbyId && (readOnly ? !!activeMasterId : true) }
   );
   const { data: allUsers } = trpc.rpg.session.getUsers.useQuery(
-    { lobbyId: activeLobbyId || 0 },
+    { lobbyId: activeLobbyId! },
     { enabled: !!activeLobbyId }
   );
   const saveCanvasMutation = trpc.rpg.masterCanvas.save.useMutation();
@@ -59,6 +60,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
   const [resizeMode, setResizeMode] = useState<string | null>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | undefined>();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hadDrawingRef = useRef<boolean>(false);
   const [history, setHistory] = useState<CanvasState[]>([]);
@@ -199,20 +201,24 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
 
     // Initial resize with a small delay to ensure DOM is fully rendered
-    const timeoutId = setTimeout(() => resizeCanvas(), 0);
+    resizeTimeoutRef.current = setTimeout(() => resizeCanvas(), 0);
 
     const resizeObserver = new ResizeObserver(() => {
-      // Debounce resize events
-      clearTimeout(timeoutId);
-      setTimeout(() => resizeCanvas(), 0);
+      // Debounce resize events properly
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeTimeoutRef.current = setTimeout(() => resizeCanvas(), 50);
     });
     resizeObserver.observe(container);
 
     return () => {
-      clearTimeout(timeoutId);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
       resizeObserver.disconnect();
     };
-  }, [savedCanvas, isLoading]);
+  }, [isLoading, readOnly]);
 
   // Redraw canvas with images and saved canvas data
   useEffect(() => {
@@ -227,20 +233,9 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw saved canvas data (drawings) if available
-      if (savedCanvas?.canvasData) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0);
-          drawImagesOnCanvas();
-        };
-        img.onerror = () => {
-          drawImagesOnCanvas();
-        };
-        img.src = savedCanvas.canvasData;
-      } else {
-        drawImagesOnCanvas();
-      }
+      // For players, draw saved canvas data is handled by separate useEffect
+      // For master, only draw images (not the saved canvas which would overwrite local edits)
+      drawImagesOnCanvas();
     };
 
     const drawImagesOnCanvas = () => {
@@ -264,7 +259,24 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
 
     drawContent();
-  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData]);
+  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData, readOnly]);
+
+  // Load initial canvas data for players only
+  useEffect(() => {
+    if (!readOnly || !savedCanvas?.canvasData) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = savedCanvas.canvasData;
+  }, [readOnly, savedCanvas?.canvasData]);
 
   // Load images from savedCanvas.imagesData when canvas is fetched
   useEffect(() => {
@@ -602,7 +614,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         toast.success("Canvas salvo com sucesso!");
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar canvas");
+      const errorMessage = typeof error === 'string' ? error : error?.message || "Erro ao salvar canvas";
+      toast.error(String(errorMessage));
     }
   };
 
