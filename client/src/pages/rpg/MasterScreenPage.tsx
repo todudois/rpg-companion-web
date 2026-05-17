@@ -691,9 +691,20 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     
     setDrawableImages([]);
     setSelectedImageId(null);
-    // Save to history and sync with players
-    saveToHistory();
-    saveCanvasDebounced();
+    
+    // Save empty canvas and clear images from database
+    saveCanvasMutation.mutate(
+      {
+        canvasData: canvas.toDataURL(),
+        imagesData: JSON.stringify([]),
+        lobbyId: activeLobbyId || ""
+      },
+      {
+        onSuccess: () => {
+          saveToHistory();
+        }
+      }
+    );
   };
 
   const handleLoadImage = (event: React.ChangeEvent<HTMLInputElement>) => {
