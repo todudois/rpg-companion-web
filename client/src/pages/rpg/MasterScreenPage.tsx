@@ -233,8 +233,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // For players, draw saved canvas data is handled by separate useEffect
-      // For master, only draw images (not the saved canvas which would overwrite local edits)
+      // Only draw images - saved canvas is handled by separate useEffect for players
       drawImagesOnCanvas();
     };
 
@@ -259,7 +258,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
 
     drawContent();
-  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData, readOnly]);
+  }, [drawableImages, selectedImageId, readOnly]);
 
   // Load initial canvas data for players only
   useEffect(() => {
@@ -274,9 +273,14 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const img = new Image();
     img.onload = () => {
       ctx.drawImage(img, 0, 0);
+      // Draw images on top of the saved canvas
+      const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      sortedImages.forEach((img) => {
+        ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
+      });
     };
     img.src = savedCanvas.canvasData;
-  }, [readOnly, savedCanvas?.canvasData]);
+  }, [readOnly, savedCanvas?.canvasData, drawableImages]);
 
   // Load images from savedCanvas.imagesData when canvas is fetched
   useEffect(() => {
@@ -401,6 +405,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         }
       } else {
         setSelectedImageId(null);
+        // Save canvas when deselecting image
+        saveCanvasDebounced();
       }
     } else {
       setIsDrawing(true);
@@ -527,8 +533,9 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setDrawableImages([]);
     setSelectedImageId(null);
-    // Save to history
+    // Save to history and sync with players
     saveToHistory();
+    saveCanvasDebounced();
   };
 
   const handleLoadImage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -905,8 +912,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         </div>
 
         {/* Participants Panel - Collapsible on Mobile */}
-        <Card className="w-full lg:w-64 bg-slate-800 border-slate-700 flex flex-col">
-          <CardContent className="pt-4 flex flex-col h-full overflow-hidden">
+        <Card className="w-full lg:w-64 bg-slate-800 border-slate-700 flex flex-col max-h-full">
+          <CardContent className="pt-4 flex flex-col h-full overflow-hidden max-h-full">
             {/* Header with toggle button */}
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <div className="flex items-center gap-2">

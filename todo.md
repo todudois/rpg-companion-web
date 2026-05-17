@@ -311,3 +311,10 @@
 - [x] Adicionar criação/edição de personagens dentro do lobby
 - [x] Criador do lobby vira mestre automaticamente e não pode trocar role
 - [x] Corrigir contratos de API (attributes em vez de data)
+
+## Bugs de Canvas (Críticos)
+
+- [x] Canvas do mestre sendo apagado quando jogador visualiza
+- [x] Pop-up branco na direita pausa atualizações de canvas
+- [x] Imagem gera pop-up e reseta canvas do mestre
+- [x] Canvas do mestre reseta mas do jogador não reseta (dessincronização)

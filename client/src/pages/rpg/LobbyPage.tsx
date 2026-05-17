@@ -8,11 +8,11 @@ import { Users, Crown, Sword, Eye } from "lucide-react";
 
 export default function LobbyPage() {
   const { user } = useAuth();
-  const { activeRole, setActiveRole, activeCharacterId, setActiveCharacterId, activeMasterId, isLobbyCreator } = useRPG();
+  const { activeRole, setActiveRole, activeCharacterId, setActiveCharacterId, activeLobbyId, isLobbyCreator } = useRPG();
   const { data: characters } = trpc.rpg.characters.list.useQuery();
   const { data: allUsers, refetch: refetchUsers } = trpc.rpg.session.getUsers.useQuery(
-    { lobbyId: activeMasterId || 0 },
-    { enabled: !!activeMasterId }
+    { lobbyId: activeLobbyId || 0 },
+    { enabled: !!activeLobbyId }
   );
   const updateRoleMutation = trpc.rpg.session.updateRole.useMutation();
 
@@ -21,10 +21,10 @@ export default function LobbyPage() {
   const currentUserRole = allUsers?.find(u => u.userId === user?.id)?.role;
 
   const handleRoleChange = async (newRole: string) => {
-    if (!activeMasterId) return;
+    if (!activeLobbyId) return;
     try {
       await updateRoleMutation.mutateAsync({
-        lobbyId: activeMasterId,
+        lobbyId: activeLobbyId,
         role: newRole as "mestre" | "jogador" | "espectador" | "indefinido",
       });
       setActiveRole(newRole as any);
