@@ -327,3 +327,8 @@
 
 - [x] Desconectar jogadores de lobbys quando fecham o site (usar beforeunload)
 - [x] Corrigir bug: usuário que criou lobby entra como jogador em servidor público (deve entrar como mestre)
+
+## Bugs de Canvas (Sessão Atual)
+
+- [x] Borracha não apaga corretamente - desenha com cor de fundo em vez de apagar
+- [x] Imagens selecionadas deletam desenhos e formas geométricas do canvas

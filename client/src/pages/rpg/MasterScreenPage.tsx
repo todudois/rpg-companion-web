@@ -106,7 +106,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const img = new Image();
@@ -167,7 +167,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const resizeCanvas = () => {
@@ -225,15 +225,21 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const drawContent = () => {
-      // Redraw background
+      // Save current canvas state (drawings)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Clear and redraw: background + saved canvas + images + selection
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Only draw images - saved canvas is handled by separate useEffect for players
+      
+      // Restore the saved drawing data
+      ctx.putImageData(imageData, 0, 0);
+      
+      // Draw images on top
       drawImagesOnCanvas();
     };
 
@@ -258,7 +264,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
 
     drawContent();
-  }, [drawableImages, selectedImageId, readOnly]);
+  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData]);
 
   // Load initial canvas data for players only
   useEffect(() => {
@@ -267,7 +273,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
     
     const img = new Image();
@@ -448,7 +454,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { alpha: true });
       if (!ctx) return;
 
       // For geometric shapes, redraw the canvas to clear previous preview
@@ -526,10 +532,9 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.fillStyle = "#111827";
+          const ctx = canvas.getContext("2d", { alpha: true });
+        if (!ctx) return;
+        ctx.fillStyle = "#111827";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     setDrawableImages([]);
     setSelectedImageId(null);
@@ -587,7 +592,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       const tempCanvas = document.createElement("canvas");
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext("2d");
+      const tempCtx = tempCanvas.getContext("2d", { alpha: true });
       if (!tempCtx) return;
 
       tempCtx.drawImage(canvas, 0, 0);
@@ -849,7 +854,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                     img.onload = () => {
                       const canvas = canvasRef.current;
                       if (!canvas) return;
-                      const ctx = canvas?.getContext("2d");
+                      const ctx = canvas?.getContext("2d", { alpha: true });
                       if (ctx && canvas) {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         // Auto-save after loading image
