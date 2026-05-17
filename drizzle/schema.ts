@@ -1,5 +1,6 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean, decimal, unique } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
+import { longtext } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -118,8 +119,8 @@ export const masterCanvasData = mysqlTable("masterCanvasData", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   lobbyId: int("lobbyId").notNull(), // Canvas is unique per lobby
-  canvasData: text("canvasData").notNull(), // Base64 encoded canvas image
-  imagesData: text("imagesData"), // JSON array of image metadata {id, url, x, y, width, height, zIndex}
+  canvasData: longtext("canvasData").notNull(), // Base64 encoded canvas image (longtext for large images)
+  imagesData: longtext("imagesData"), // JSON array of image metadata {id, url, x, y, width, height, zIndex}
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
