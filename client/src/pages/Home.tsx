@@ -229,26 +229,28 @@ export default function Home() {
               )}
             </TabsList>
 
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <TabsContent value="lobby" className="mt-0">
+            <div className="flex-1 min-h-0 overflow-y-auto relative">
+              {/* MasterScreenPage sempre montado, apenas oculto com CSS */}
+              {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
+                <div className="absolute inset-0" style={{ display: activeTab === "mestre" ? "block" : "none", pointerEvents: activeTab === "mestre" ? "auto" : "none" }}>
+                  <MasterScreenPage readOnly={activeRole !== "mestre"} />
+                </div>
+              )}
+
+              {/* Outras abas */}
+              <TabsContent value="lobby" className="mt-0" style={{ display: activeTab === "lobby" ? "block" : "none" }}>
                 <LobbyPage />
               </TabsContent>
 
               {(activeRole === "mestre" || activeRole === "jogador") && (
-                <TabsContent value="dados" className="mt-0">
+                <TabsContent value="dados" className="mt-0" style={{ display: activeTab === "dados" ? "block" : "none" }}>
                   <DiceRollPage />
                 </TabsContent>
               )}
 
               {activeRole === "jogador" && (
-                <TabsContent value="personagens" className="mt-0">
+                <TabsContent value="personagens" className="mt-0" style={{ display: activeTab === "personagens" ? "block" : "none" }}>
                   <CharactersPage />
-                </TabsContent>
-              )}
-
-              {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
-                <TabsContent value="mestre" className="mt-0">
-                  <MasterScreenPage readOnly={activeRole !== "mestre"} />
                 </TabsContent>
               )}
             </div>
