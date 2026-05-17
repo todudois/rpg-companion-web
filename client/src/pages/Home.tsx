@@ -248,27 +248,9 @@ export default function Home() {
 
             </div>
 
-            {/* MasterScreenPage renderizado fora das abas para manter estado persistente */}
-            {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
-              <div 
-                className="absolute inset-0"
-                style={{
-                  display: activeTab === "mestre" ? "block" : "none",
-                  position: "absolute",
-                  top: "0",
-                  left: "0",
-                  right: "0",
-                  bottom: "0",
-                  zIndex: activeTab === "mestre" ? 10 : -1
-                }}
-              >
-                <MasterScreenPage readOnly={activeRole !== "mestre"} />
-              </div>
-            )}
-
             {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
               <TabsContent value="mestre" className="mt-0">
-                {/* Placeholder vazio para manter a aba ativa */}
+                <MasterScreenPage readOnly={activeRole !== "mestre"} />
               </TabsContent>
             )}
           </Tabs>
