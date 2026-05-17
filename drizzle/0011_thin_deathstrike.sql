@@ -1,0 +1,1 @@
+ALTER TABLE `masterCanvasData` ADD CONSTRAINT `masterCanvasData_userId_lobbyId_unique` UNIQUE(`userId`,`lobbyId`);

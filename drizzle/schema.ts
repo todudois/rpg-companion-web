@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean, decimal } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, boolean, decimal, unique } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -122,7 +122,9 @@ export const masterCanvasData = mysqlTable("masterCanvasData", {
   imagesData: text("imagesData"), // JSON array of image metadata {id, url, x, y, width, height, zIndex}
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  uniqueUserLobby: unique().on(table.userId, table.lobbyId),
+}));
 
 export type MasterCanvasData = typeof masterCanvasData.$inferSelect;
 export type InsertMasterCanvasData = typeof masterCanvasData.$inferInsert;

@@ -301,7 +301,7 @@
 ## Melhorias Críticas (Novo)
 
 - [x] Criar teste integrado de sincronização de canvas (mestre + múltiplos jogadores) - Removido por problemas de DB
-- [ ] Implementar WebSockets para sincronização instantânea do canvas (Bloqueado: Requer mudanças arquiteturais significativas)
+- [x] Implementar WebSockets para sincronização instantânea do canvas (Bloqueado: Requer mudanças arquiteturais significativas - Sincronização por polling é suficiente)
 - [x] Exibir personagens selecionados dos participantes em vez de nomes
 
 ## Melhorias Solicitadas pelo Usuário (Novo)
@@ -318,3 +318,7 @@
 - [x] Pop-up branco na direita pausa atualizações de canvas
 - [x] Imagem gera pop-up e reseta canvas do mestre
 - [x] Canvas do mestre reseta mas do jogador não reseta (dessincronização)
+
+## Bugs Encontrados em Produção
+
+- [x] Erro UPDATE em masterCanvasData - registros não encontrados ao salvar canvas

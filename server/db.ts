@@ -229,21 +229,21 @@ export async function upsertMasterCanvasData(userId: number, lobbyId: number, ca
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const existing = await getMasterCanvasData(userId, lobbyId);
-  
-  if (existing) {
-    const updateData: any = { canvasData, updatedAt: new Date() };
-    if (imagesData !== undefined) {
-      updateData.imagesData = imagesData;
-    }
-    return db.update(masterCanvasData).set(updateData).where(and(eq(masterCanvasData.userId, userId), eq(masterCanvasData.lobbyId, lobbyId)));
-  } else {
-    return db.insert(masterCanvasData).values({
-      userId,
-      lobbyId,
-      canvasData,
-      imagesData: imagesData || null,
-    });
+  try {
+    // Use raw SQL for MySQL ON DUPLICATE KEY UPDATE
+    const result = await db.execute(
+      `INSERT INTO masterCanvasData (userId, lobbyId, canvasData, imagesData, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, NOW(), NOW())
+       ON DUPLICATE KEY UPDATE
+       canvasData = VALUES(canvasData),
+       imagesData = VALUES(imagesData),
+       updatedAt = NOW()`,
+      [userId, lobbyId, canvasData, imagesData || null]
+    );
+    return result;
+  } catch (error) {
+    console.error("Error upserting master canvas data:", error);
+    throw error;
   }
 }
 

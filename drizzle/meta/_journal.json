@@ -78,6 +78,13 @@
       "when": 1778980117799,
       "tag": "0010_dapper_war_machine",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1778983395835,
+      "tag": "0011_thin_deathstrike",
+      "breakpoints": true
     }
   ]
 }
