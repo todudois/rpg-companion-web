@@ -718,20 +718,24 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     }
   };
 
-  const handleMouseUp = () => {
-    isMovingImageRef.current = false;
-    setIsDrawing(false);
-    setDraggedImageId(null);
-    setResizeMode(null);
-    setLastPos(null);
-    setStartPos(null);
-    // Auto-save canvas after drawing
-    if (hadDrawingRef.current) {
-      saveCanvasDebounced();
-      saveToHistoryDebounced();
-      hadDrawingRef.current = false; // Reset for next drawing
-    }
-  };
+ const handleMouseUp = () => {
+  // Salva a informação se estávamos movendo algo antes de limpar os estados
+  const wasManipulatingImage = draggedImageId !== null || isMovingImageRef.current;
+
+  isMovingImageRef.current = false;
+  setIsDrawing(false);
+  setDraggedImageId(null);
+  setResizeMode(null);
+  setLastPos(null);
+  setStartPos(null);
+  
+  // CORREÇÃO: Auto-salva se desenhou algo OU se arrastou/redimensionou uma imagem
+  if (hadDrawingRef.current || wasManipulatingImage) {
+    saveCanvasDebounced();
+    saveToHistoryDebounced();
+    hadDrawingRef.current = false; // Reseta para o próximo desenho
+  }
+};
 
   const handleClearCanvas = () => {
     if (!confirm("Tem certeza que deseja limpar o canvas?")) return;
