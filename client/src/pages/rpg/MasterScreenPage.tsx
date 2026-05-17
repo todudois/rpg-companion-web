@@ -64,7 +64,8 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hadDrawingRef = useRef<boolean>(false);
   const isMovingImageRef = useRef<boolean>(false);
-  const cleanDrawingsRef = useRef<ImageData | null>(null); // Bitmap limpo dos desenhos (sem imagens)
+  const drawingsCanvasRef = useRef<HTMLCanvasElement | null>(null); // Separate canvas for drawings only (pen/eraser)
+  const cleanDrawingsRef = useRef<ImageData | null>(null); // Bitmap dos desenhos (sem imagens)
   const [history, setHistory] = useState<CanvasState[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -184,6 +185,17 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       
       canvas.width = width;
       canvas.height = height;
+      
+      // Initialize drawings canvas if not exists
+      if (!drawingsCanvasRef.current) {
+        drawingsCanvasRef.current = document.createElement('canvas');
+        drawingsCanvasRef.current.width = width;
+        drawingsCanvasRef.current.height = height;
+      } else {
+        drawingsCanvasRef.current.width = width;
+        drawingsCanvasRef.current.height = height;
+      }
+      
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -231,10 +243,17 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     if (!ctx) return;
 
     // If we're moving/resizing, use requestAnimationFrame for smooth animation
-    if (isMovingImageRef.current && cleanDrawingsRef.current) {
+    if (isMovingImageRef.current && drawingsCanvasRef.current) {
       const animationFrameId = requestAnimationFrame(() => {
-        // Restore the clean base (background only)
-        ctx.putImageData(cleanDrawingsRef.current!, 0, 0);
+        // Clear canvas
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Restore drawings from drawingsCanvas
+        const drawingsData = drawingsCanvasRef.current!.getContext("2d", { alpha: true })?.getImageData(0, 0, canvas.width, canvas.height);
+        if (drawingsData) {
+          ctx.putImageData(drawingsData, 0, 0);
+        }
         
         // Redraw all images at their current positions
         const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
@@ -282,16 +301,15 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         }
       });
       
-      // Save clean drawings state (background only, no images)
-      // This is used during movement to restore the base without any images
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext("2d", { alpha: true });
-      if (tempCtx) {
-        tempCtx.fillStyle = "#111827";
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        cleanDrawingsRef.current = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      // Copy current canvas to drawingsCanvas for use during movement
+      if (drawingsCanvasRef.current) {
+        const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+        if (drawCtx) {
+          // Copy the entire canvas (with drawings and images)
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          drawCtx.putImageData(imageData, 0, 0);
+          cleanDrawingsRef.current = imageData;
+        }
       }
     };
 
@@ -533,12 +551,45 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           ctx.lineTo(pos.x, pos.y);
           ctx.stroke();
           ctx.globalCompositeOperation = prevComposite;
+          
+          // Also draw on drawings canvas
+          if (drawingsCanvasRef.current) {
+            const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+            if (drawCtx) {
+              const prevComposite2 = drawCtx.globalCompositeOperation;
+              drawCtx.globalCompositeOperation = "destination-out";
+              drawCtx.strokeStyle = "rgba(0,0,0,1)";
+              drawCtx.lineWidth = brushSize;
+              drawCtx.lineCap = "round";
+              drawCtx.lineJoin = "round";
+              drawCtx.beginPath();
+              drawCtx.moveTo(lastPos.x, lastPos.y);
+              drawCtx.lineTo(pos.x, pos.y);
+              drawCtx.stroke();
+              drawCtx.globalCompositeOperation = prevComposite2;
+            }
+          }
         } else if (drawTool === "pen") {
           ctx.strokeStyle = drawColor;
           ctx.beginPath();
           ctx.moveTo(lastPos.x, lastPos.y);
           ctx.lineTo(pos.x, pos.y);
           ctx.stroke();
+          
+          // Also draw on drawings canvas
+          if (drawingsCanvasRef.current) {
+            const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+            if (drawCtx) {
+              drawCtx.strokeStyle = drawColor;
+              drawCtx.lineWidth = brushSize;
+              drawCtx.lineCap = "round";
+              drawCtx.lineJoin = "round";
+              drawCtx.beginPath();
+              drawCtx.moveTo(lastPos.x, lastPos.y);
+              drawCtx.lineTo(pos.x, pos.y);
+              drawCtx.stroke();
+            }
+          }
         }
       }
 
