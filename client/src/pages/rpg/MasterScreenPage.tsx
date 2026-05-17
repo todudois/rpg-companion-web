@@ -437,76 +437,87 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     });
   }, [selectedImageId, drawableImages, readOnly]);
 
-// Load initial canvas data for players only
-useEffect(() => {
-  if (!readOnly || !savedCanvas?.canvasData) return;
-  
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  
-  const ctx = canvas.getContext("2d", { alpha: true });
-  if (!ctx) return;
-  
-  const img = new Image();
-  img.onload = () => {
-    // Limpa o canvas para evitar sobreposição de fantasmas antigos caso redimensione
-    ctx.fillStyle = "#111827";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+// Load initial canvas data for players only (Fundo / Desenhos)
+  useEffect(() => {
+    if (!readOnly || !savedCanvas?.canvasData) return;
     
-    // Desenha o fundo com os traços do mestre
-    ctx.drawImage(img, 0, 0);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     
-    // Desenha as imagens dinâmicas por cima
-    const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-    sortedImages.forEach((img) => {
-      ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
-    });
-  };
-  img.src = savedCanvas.canvasData;
-}, [readOnly, savedCanvas?.canvasData, drawableImages]);
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      // Apaga e pinta o fundo APENAS QUANDO a imagem já estiver 100% pronta na memória
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      // Força o redesenho imediato das imagens por cima do novo fundo
+      const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      sortedImages.forEach((imgState) => {
+        ctx.drawImage(imgState.img, imgState.x, imgState.y, imgState.width, imgState.height);
+      });
+    };
+    img.src = savedCanvas.canvasData;
+    
+    // NOTE: Removemos 'drawableImages' das dependências para o fundo não piscar
+    // toda vez que um token/personagem se mover 1 pixel.
+  }, [readOnly, savedCanvas?.canvasData]);
 
- // Load images from savedCanvas.imagesData when canvas is fetched
+// Load images from savedCanvas.imagesData when canvas is fetched
   useEffect(() => {
     if (!savedCanvas?.imagesData) return;
     
     try {
       const imagesMetadata = JSON.parse(savedCanvas.imagesData);
-      const loadedImages: DrawableImage[] = [];
-      let loadedCount = 0;
       
-      imagesMetadata.forEach((metadata: any) => {
-        if (metadata.url) {
-          const img = new Image();
-          img.onload = () => {
-            loadedImages.push({
-              id: metadata.id,
-              img,
+      setDrawableImages((currentImages) => {
+        let updatedImages = [...currentImages];
+        
+        imagesMetadata.forEach((metadata: any) => {
+          const existingImgIndex = updatedImages.findIndex(img => img.id === metadata.id);
+          
+          if (existingImgIndex >= 0) {
+            // A imagem já existe! Apenas atualizamos a posição/tamanho na memória
+            // Isso evita recriar a tag HTML de imagem e previne o "flicker"
+            updatedImages[existingImgIndex] = {
+              ...updatedImages[existingImgIndex],
               x: metadata.x,
               y: metadata.y,
               width: metadata.width,
               height: metadata.height,
               zIndex: metadata.zIndex || 0,
-              url: metadata.url,
-            });
-            loadedCount++;
-            
-            if (loadedCount === imagesMetadata.length) {
-              setDrawableImages(loadedImages);
-            }
-          };
-          img.onerror = () => {
-            loadedCount++;
-            if (loadedCount === imagesMetadata.length) {
-              setDrawableImages(loadedImages);
-            }
-          };
-          img.src = metadata.url;
-        }
+            };
+          } else if (metadata.url) {
+            // É uma nova imagem adicionada pelo Mestre. Precisamos carregar do zero.
+            const img = new Image();
+            img.onload = () => {
+              setDrawableImages(prev => {
+                // Evita duplicatas caso o onload dispare duas vezes seguidas
+                if (prev.some(p => p.id === metadata.id)) return prev;
+                return [...prev, {
+                  id: metadata.id,
+                  img,
+                  x: metadata.x,
+                  y: metadata.y,
+                  width: metadata.width,
+                  height: metadata.height,
+                  zIndex: metadata.zIndex || 0,
+                  url: metadata.url,
+                }];
+              });
+            };
+            img.src = metadata.url;
+          }
+        });
+
+        // Remove do Canvas as imagens que o Mestre deletou no painel dele
+        const currentIds = imagesMetadata.map((m: any) => m.id);
+        return updatedImages.filter(img => currentIds.includes(img.id));
       });
       
-      if (imagesMetadata.length === 0) {
-        setDrawableImages([]);
-      }
     } catch (error) {
       console.error("Failed to parse imagesData:", error);
     }
