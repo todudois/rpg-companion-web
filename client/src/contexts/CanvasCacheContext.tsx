@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 interface CanvasCache {
   drawingsImageData: ImageData | null;
@@ -23,18 +23,14 @@ interface CanvasCacheContextType {
 const CanvasCacheContext = createContext<CanvasCacheContextType | undefined>(undefined);
 
 export const CanvasCacheProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const cacheRef = useRef<CanvasCache | null>(null);
-
-  const setCache = (cache: CanvasCache | null) => {
-    cacheRef.current = cache;
-  };
+  const [cache, setCache] = useState<CanvasCache | null>(null);
 
   const clearCache = () => {
-    cacheRef.current = null;
+    setCache(null);
   };
 
   return (
-    <CanvasCacheContext.Provider value={{ cache: cacheRef.current, setCache, clearCache }}>
+    <CanvasCacheContext.Provider value={{ cache, setCache, clearCache }}>
       {children}
     </CanvasCacheContext.Provider>
   );
