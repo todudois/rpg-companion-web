@@ -232,10 +232,18 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     // If we're moving/resizing, use requestAnimationFrame for smooth animation
     if (isMovingImageRef.current) {
       const animationFrameId = requestAnimationFrame(() => {
-        // Only redraw images on top of existing canvas (don't clear)
-        const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+        // Get the current drawing state (without images)
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Redraw all images (this overwrites old positions)
+        // Clear canvas with background
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Restore the drawing data (without images)
+        ctx.putImageData(imageData, 0, 0);
+        
+        // Redraw all images at their current positions
+        const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
         sortedImages.forEach((img) => {
           ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
 
