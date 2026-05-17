@@ -230,22 +230,26 @@ export async function upsertMasterCanvasData(userId: number, lobbyId: number, ca
   if (!db) throw new Error("Database not available");
   
   try {
-    // Escape strings for SQL
-    const escapeSql = (str: string | null) => {
-      if (str === null) return 'NULL';
-      return `'${str.replace(/'/g, "''")}' `;
-    };
-    
-    // Use raw SQL for MySQL ON DUPLICATE KEY UPDATE
-    const result = await db.execute(
-      `INSERT INTO masterCanvasData (userId, lobbyId, canvasData, imagesData, createdAt, updatedAt)
-       VALUES (${userId}, ${lobbyId}, ${escapeSql(canvasData)}, ${escapeSql(imagesData || null)}, NOW(), NOW())
-       ON DUPLICATE KEY UPDATE
-       canvasData = VALUES(canvasData),
-       imagesData = VALUES(imagesData),
-       updatedAt = NOW()`
-    );
-    return result;
+    // Try to insert first
+    const insertResult = await db.insert(masterCanvasData).values({
+      userId,
+      lobbyId,
+      canvasData,
+      imagesData: imagesData || null,
+    }).catch(async (error: any) => {
+      // If insert fails due to duplicate key, do update
+      if (error.code === 'ER_DUP_ENTRY') {
+        return db.update(masterCanvasData)
+          .set({
+            canvasData,
+            imagesData: imagesData || null,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(masterCanvasData.userId, userId), eq(masterCanvasData.lobbyId, lobbyId)));
+      }
+      throw error;
+    });
+    return insertResult;
   } catch (error) {
     console.error("Error upserting master canvas data:", error);
     throw error;
