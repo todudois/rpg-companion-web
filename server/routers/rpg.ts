@@ -285,7 +285,7 @@ export const rpgRouter = router({
         if (lobby?.id) {
           await upsertSessionParticipant(ctx.user.id, lobby.id, null, "mestre");
         }
-        return lobby;
+        return { ...lobby, masterId: ctx.user.id };
       }),
 
     getAvailable: protectedProcedure.query(async () => {
@@ -311,7 +311,9 @@ export const rpgRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Senha incorreta" });
         }
         await upsertSessionParticipant(ctx.user.id, lobby.id, null, "jogador");
-        return lobby;
+        // Get the master user ID for this lobby
+        const master = await getMasterInLobby(lobby.id);
+        return { ...lobby, masterId: master?.userId || null };
       }),
 
     close: protectedProcedure

@@ -45,7 +45,7 @@ export default function LobbySelectionPage() {
       toast.success(`Lobby criado! Código: ${result?.accessCode}`);
       setCreateName("");
       setCreatePassword("");
-      if (result?.id) setActiveMasterId(result.id);
+      if (result?.masterId) setActiveMasterId(result.masterId);
       setActiveRole("mestre");
       refetchMyLobbys();
     } catch (error: any) {
@@ -75,7 +75,7 @@ export default function LobbySelectionPage() {
       toast.success(`Entrou no lobby: ${result.name}`);
       setJoinCode("");
       setJoinPassword("");
-      setActiveMasterId(result.id);
+      if (result?.masterId) setActiveMasterId(result.masterId);
       // Definir role como "jogador" ao entrar em um lobby
       setActiveRole("jogador");
     } catch (error: any) {
@@ -237,7 +237,7 @@ export default function LobbySelectionPage() {
                               <Button
                                 size="sm"
                                 onClick={() => {
-                                  setActiveMasterId(lobby.id);
+                                  setActiveMasterId(lobby.masterId || lobby.id);
                                   setActiveRole("mestre");
                                 }}
                                 className="bg-amber-600 hover:bg-amber-700"
