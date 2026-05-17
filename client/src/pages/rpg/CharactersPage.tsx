@@ -201,7 +201,7 @@ export default function CharactersPage() {
         // Salvar atributos
         await upsertAttributesMutation.mutateAsync({
           characterId,
-          data: attributes,
+          attributes: attributes,
         });
 
         // Salvar habilidades
