@@ -437,27 +437,33 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     });
   }, [selectedImageId, drawableImages, readOnly]);
 
-  // Load initial canvas data for players only
-  useEffect(() => {
-    if (!readOnly || !savedCanvas?.canvasData) return;
+ // Load initial canvas data for players only
+useEffect(() => {
+  if (!readOnly || !savedCanvas?.canvasData) return;
+  
+  const canvas = canvasRef.current;
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext("2d", { alpha: true });
+  if (!ctx) return;
+  
+  const img = new Image();
+  img.onload = () => {
+    // Limpa o canvas para evitar sobreposição de fantasmas antigos caso redimensione
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    // Desenha o fundo com os traços do mestre
+    ctx.drawImage(img, 0, 0);
     
-    const ctx = canvas.getContext("2d", { alpha: true });
-    if (!ctx) return;
-    
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0);
-      // Draw images on top of the saved canvas
-      const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-      sortedImages.forEach((img) => {
-        ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
-      });
-    };
-    img.src = savedCanvas.canvasData;
-  }, [readOnly, savedCanvas?.canvasData, drawableImages]);
+    // Desenha as imagens dinâmicas por cima
+    const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    sortedImages.forEach((img) => {
+      ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
+    });
+  };
+  img.src = savedCanvas.canvasData;
+}, [readOnly, savedCanvas?.canvasData, drawableImages]);
 
   // Load images from savedCanvas.imagesData when canvas is fetched
   useEffect(() => {
