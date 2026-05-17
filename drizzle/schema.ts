@@ -42,6 +42,7 @@ export const characters = mysqlTable("characters", {
   vigorMax: int("vigorMax").default(0).notNull(),
   vigorType: mysqlEnum("vigorType", ["vigor", "mana"]).default("vigor").notNull(),
   notes: text("notes"),
+  imageUrl: text("imageUrl"), // URL to character portrait/avatar image
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

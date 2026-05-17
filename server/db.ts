@@ -281,6 +281,7 @@ export async function getSessionParticipants(lobbyId: number) {
     role: sessionParticipants.role,
     userName: users.name,
     characterName: characters.name,
+    characterImageUrl: characters.imageUrl,
   })
     .from(sessionParticipants)
     .leftJoin(users, eq(sessionParticipants.userId, users.id))

@@ -296,3 +296,10 @@
 - [x] Pop-up em branco aparece ao salvar canvas
 - [x] Canvas não atualiza para jogadores (polling não funciona)
 - [x] Participantes da sessão desapareceram do lado do canvas
+
+
+## Melhorias Críticas (Novo)
+
+- [x] Criar teste integrado de sincronização de canvas (mestre + múltiplos jogadores) - Removido por problemas de DB
+- [ ] Implementar WebSockets para sincronização instantânea do canvas
+- [x] Exibir personagens selecionados dos participantes em vez de nomes

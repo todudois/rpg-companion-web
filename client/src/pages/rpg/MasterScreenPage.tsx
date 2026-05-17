@@ -940,15 +940,32 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
                           : "bg-purple-900 border-purple-700"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Character Avatar */}
+                        {participant.role === "jogador" && participant.characterImageUrl ? (
+                          <img
+                            src={participant.characterImageUrl}
+                            alt={participant.characterName || "Personagem"}
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded border border-slate-400 object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded border border-slate-400 bg-slate-700 flex items-center justify-center flex-shrink-0">
+                            <span className="text-lg">
+                              {participant.role === "mestre" && "👑"}
+                              {participant.role === "jogador" && "🛡️"}
+                              {participant.role === "espectador" && "👁️"}
+                              {participant.role === "indefinido" && "❓"}
+                            </span>
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold text-white truncate">{participant.userName || "Desconhecido"}</p>
                           <p className="text-xs text-slate-300 truncate">
-                            {participant.role === "mestre" && "👑 Mestre"}
-                            {participant.role === "jogador" && participant.characterName && `🛡️ ${participant.characterName}`}
-                            {participant.role === "jogador" && !participant.characterName && "🛡️ Jogador"}
-                            {participant.role === "espectador" && "👁️ Espectador"}
-                            {participant.role === "indefinido" && "❓ Indefinido"}
+                            {participant.role === "mestre" && "Mestre"}
+                            {participant.role === "jogador" && participant.characterName && participant.characterName}
+                            {participant.role === "jogador" && !participant.characterName && "Jogador"}
+                            {participant.role === "espectador" && "Espectador"}
+                            {participant.role === "indefinido" && "Indefinido"}
                           </p>
                         </div>
                         {participant.role === "mestre" && <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 flex-shrink-0" />}
