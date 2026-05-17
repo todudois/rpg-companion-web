@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { RPGProvider } from "./contexts/RPGContext";
+import { CanvasCacheProvider } from "./contexts/CanvasCacheContext";
 import Home from "./pages/Home";
 import CharacterDetailsPage from "./pages/rpg/CharacterDetailsPage";
 
@@ -34,10 +35,12 @@ function App() {
         // switchable
       >
         <RPGProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
+          <CanvasCacheProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </CanvasCacheProvider>
         </RPGProvider>
       </ThemeProvider>
     </ErrorBoundary>

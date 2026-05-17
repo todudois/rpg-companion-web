@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useRPG } from "@/contexts/RPGContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useCanvasCache } from "@/contexts/CanvasCacheContext";
 import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Users, Crown, Sword, ChevronDown, ChevronUp, RotateCcw, RotateCw } from "lucide-react";
@@ -33,6 +34,7 @@ interface CanvasState {
 export default function MasterScreenPage({ readOnly = false }: MasterScreenPageProps) {
   const { user } = useAuth();
   const { activeMasterId, activeRole, activeLobbyId } = useRPG();
+  const { cache, setCache, clearCache } = useCanvasCache();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -211,7 +213,34 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      if (savedCanvas?.canvasData && isLoading) {
+      // Restore from cache if available
+      if (cache && cache.drawingsImageData && canvas.width > 0 && canvas.height > 0) {
+        ctx.putImageData(cache.drawingsImageData, 0, 0);
+        if (drawingsCanvasRef.current) {
+          const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+          if (drawCtx) {
+            drawCtx.putImageData(cache.drawingsImageData, 0, 0);
+          }
+        }
+        // Restore images from cache
+        const cachedImages = cache.imagesData.map(imgData => {
+          const img = new Image();
+          img.src = imgData.imageDataUrl;
+          return {
+            id: imgData.id,
+            img,
+            x: imgData.x,
+            y: imgData.y,
+            width: imgData.width,
+            height: imgData.height,
+            zIndex: imgData.zIndex,
+            url: imgData.imageDataUrl,
+          };
+        });
+        setDrawableImages(cachedImages);
+        setIsLoading(false);
+        clearCache();
+      } else if (savedCanvas?.canvasData && isLoading) {
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0);
@@ -245,6 +274,40 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       resizeObserver.disconnect();
     };
   }, [isLoading, readOnly]);
+
+  // Save canvas state to cache when component unmounts
+  useEffect(() => {
+    return () => {
+      const canvas = canvasRef.current;
+      if (!canvas || !drawingsCanvasRef.current) return;
+
+      const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+      if (!drawCtx) return;
+
+      // Get current drawings state
+      const drawingsImageData = canvas.width > 0 && canvas.height > 0 
+        ? drawCtx.getImageData(0, 0, canvas.width, canvas.height)
+        : null;
+
+      // Convert images to serializable format
+      const imagesData = drawableImages.map(img => ({
+        id: img.id,
+        x: img.x,
+        y: img.y,
+        width: img.width,
+        height: img.height,
+        zIndex: img.zIndex,
+        imageDataUrl: img.url || img.img.src,
+      }));
+
+      // Save to cache
+      setCache({
+        drawingsImageData,
+        imagesData,
+        timestamp: Date.now(),
+      });
+    };
+  }, []);
 
   // Redraw canvas with images and saved canvas data
   useEffect(() => {
