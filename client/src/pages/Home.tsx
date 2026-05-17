@@ -246,13 +246,12 @@ export default function Home() {
                 </TabsContent>
               )}
 
+              {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
+                <div style={{ display: activeTab === "mestre" ? "block" : "none", height: "100%" }}>
+                  <MasterScreenPage readOnly={activeRole !== "mestre"} />
+                </div>
+              )}
             </div>
-
-            {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
-              <TabsContent value="mestre" className="mt-0">
-                <MasterScreenPage readOnly={activeRole !== "mestre"} />
-              </TabsContent>
-            )}
           </Tabs>
         )}
       </main>
