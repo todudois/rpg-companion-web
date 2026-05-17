@@ -242,6 +242,9 @@ export default function LobbySelectionPage() {
         characterId = editingCharacterId;
       } else {
         const result = await createCharMutation.mutateAsync(charFormData);
+        if (!result) {
+          throw new Error("Falha ao criar personagem");
+        }
         characterId = result.id;
       }
 

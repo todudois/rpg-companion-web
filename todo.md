@@ -310,3 +310,4 @@
 - [x] Adicionar aba de criação de personagens na seleção de lobby
 - [x] Adicionar criação/edição de personagens dentro do lobby
 - [x] Criador do lobby vira mestre automaticamente e não pode trocar role
+- [x] Corrigir contratos de API (attributes em vez de data)
