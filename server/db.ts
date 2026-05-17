@@ -230,10 +230,16 @@ export async function upsertMasterCanvasData(userId: number, lobbyId: number, ca
   if (!db) throw new Error("Database not available");
   
   try {
+    // Escape strings for SQL
+    const escapeSql = (str: string | null) => {
+      if (str === null) return 'NULL';
+      return `'${str.replace(/'/g, "''")}' `;
+    };
+    
     // Use raw SQL for MySQL ON DUPLICATE KEY UPDATE
     const result = await db.execute(
       `INSERT INTO masterCanvasData (userId, lobbyId, canvasData, imagesData, createdAt, updatedAt)
-       VALUES (${userId}, ${lobbyId}, ${db.escape(canvasData)}, ${db.escape(imagesData || null)}, NOW(), NOW())
+       VALUES (${userId}, ${lobbyId}, ${escapeSql(canvasData)}, ${escapeSql(imagesData || null)}, NOW(), NOW())
        ON DUPLICATE KEY UPDATE
        canvasData = VALUES(canvasData),
        imagesData = VALUES(imagesData),
