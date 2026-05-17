@@ -233,11 +233,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     // If we're moving/resizing, use requestAnimationFrame for smooth animation
     if (isMovingImageRef.current && cleanDrawingsRef.current) {
       const animationFrameId = requestAnimationFrame(() => {
-        // Clear canvas with background
-        ctx.fillStyle = "#111827";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Restore ONLY the clean drawings (without images)
+        // Restore the clean base (background only)
         ctx.putImageData(cleanDrawingsRef.current!, 0, 0);
         
         // Redraw all images at their current positions
@@ -286,8 +282,17 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         }
       });
       
-      // Save clean drawings (without images) for use during movement
-      cleanDrawingsRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // Save clean drawings state (background only, no images)
+      // This is used during movement to restore the base without any images
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext("2d", { alpha: true });
+      if (tempCtx) {
+        tempCtx.fillStyle = "#111827";
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        cleanDrawingsRef.current = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      }
     };
 
     drawContent();
@@ -418,32 +423,6 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     if (drawTool === "select") {
       const imageId = getImageAtPos(pos.x, pos.y);
       if (imageId) {
-        // Save clean state BEFORE starting to move: all images except the one being moved
-        const canvas = canvasRef.current;
-        if (canvas) {
-          const ctx = canvas.getContext("2d", { alpha: true });
-          if (ctx) {
-            // Create temp canvas to render clean state
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext("2d", { alpha: true });
-            if (tempCtx) {
-              // Draw background
-              tempCtx.fillStyle = "#111827";
-              tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-              // Draw all images except the one being moved
-              const sortedImages = [...drawableImages]
-                .filter(img => img.id !== imageId)
-                .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-              sortedImages.forEach((img) => {
-                tempCtx.drawImage(img.img, img.x, img.y, img.width, img.height);
-              });
-              cleanDrawingsRef.current = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-            }
-          }
-        }
-        
         setSelectedImageId(imageId);
         setDraggedImageId(imageId);
         
