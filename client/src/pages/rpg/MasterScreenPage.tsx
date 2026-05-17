@@ -262,9 +262,11 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         // Restore drawings from drawingsCanvas
-        const drawingsData = drawingsCanvasRef.current!.getContext("2d", { alpha: true })?.getImageData(0, 0, canvas.width, canvas.height);
-        if (drawingsData) {
-          ctx.putImageData(drawingsData, 0, 0);
+        if (canvas.width > 0 && canvas.height > 0) {
+          const drawingsData = drawingsCanvasRef.current!.getContext("2d", { alpha: true })?.getImageData(0, 0, canvas.width, canvas.height);
+          if (drawingsData) {
+            ctx.putImageData(drawingsData, 0, 0);
+          }
         }
         
         // Redraw all images at their current positions
@@ -296,7 +298,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       // First, restore drawings from drawingsCanvas (which contains only pen/eraser strokes)
-      if (drawingsCanvasRef.current) {
+      if (drawingsCanvasRef.current && canvas.width > 0 && canvas.height > 0) {
         const drawingsData = drawingsCanvasRef.current.getContext("2d", { alpha: true })?.getImageData(0, 0, canvas.width, canvas.height);
         if (drawingsData) {
           ctx.putImageData(drawingsData, 0, 0);
@@ -309,7 +311,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           // Copy to drawingsCanvas for future use
           if (drawingsCanvasRef.current) {
             const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
-            if (drawCtx) {
+            if (drawCtx && drawingsCanvasRef.current.width > 0 && drawingsCanvasRef.current.height > 0) {
               drawCtx.drawImage(img, 0, 0);
               cleanDrawingsRef.current = drawCtx.getImageData(0, 0, drawingsCanvasRef.current.width, drawingsCanvasRef.current.height);
             }
@@ -349,10 +351,12 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     if (!ctx) return;
     
     // Get current canvas state
-    const currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    
-    // Restore it (to clear old selection box)
-    ctx.putImageData(currentImageData, 0, 0);
+    if (canvas.width > 0 && canvas.height > 0) {
+      const currentImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Restore it (to clear old selection box)
+      ctx.putImageData(currentImageData, 0, 0);
+    }
     
     // Redraw selection box for currently selected image
     const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
@@ -682,7 +686,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     // Clear drawings canvas
     if (drawingsCanvasRef.current) {
       const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
-      if (drawCtx) {
+      if (drawCtx && drawingsCanvasRef.current.width > 0 && drawingsCanvasRef.current.height > 0) {
         drawCtx.fillStyle = "#111827";
         drawCtx.fillRect(0, 0, drawingsCanvasRef.current.width, drawingsCanvasRef.current.height);
         cleanDrawingsRef.current = drawCtx.getImageData(0, 0, drawingsCanvasRef.current.width, drawingsCanvasRef.current.height);
