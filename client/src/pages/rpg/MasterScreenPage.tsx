@@ -191,9 +191,21 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         drawingsCanvasRef.current = document.createElement('canvas');
         drawingsCanvasRef.current.width = width;
         drawingsCanvasRef.current.height = height;
+        // Initialize with background
+        const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+        if (drawCtx) {
+          drawCtx.fillStyle = "#111827";
+          drawCtx.fillRect(0, 0, width, height);
+        }
       } else {
         drawingsCanvasRef.current.width = width;
         drawingsCanvasRef.current.height = height;
+        // Reinitialize with background
+        const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
+        if (drawCtx) {
+          drawCtx.fillStyle = "#111827";
+          drawCtx.fillRect(0, 0, width, height);
+        }
       }
       
       ctx.fillStyle = "#111827";
@@ -279,9 +291,17 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
 
     // Normal redraw (not moving) - full canvas refresh
     const drawContent = () => {
-      // Clear and redraw: background + images + selection
+      // Clear and redraw: background + drawings + images + selection
       ctx.fillStyle = "#111827";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // First, restore drawings from drawingsCanvas (which contains only pen/eraser strokes)
+      if (drawingsCanvasRef.current) {
+        const drawingsData = drawingsCanvasRef.current.getContext("2d", { alpha: true })?.getImageData(0, 0, canvas.width, canvas.height);
+        if (drawingsData) {
+          ctx.putImageData(drawingsData, 0, 0);
+        }
+      }
       
       // Draw images on top
       const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
@@ -300,17 +320,6 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           ctx.fillRect(img.x + img.width - handleSize, img.y + img.height - handleSize, handleSize, handleSize);
         }
       });
-      
-      // Copy current canvas to drawingsCanvas for use during movement
-      if (drawingsCanvasRef.current) {
-        const drawCtx = drawingsCanvasRef.current.getContext("2d", { alpha: true });
-        if (drawCtx) {
-          // Copy the entire canvas (with drawings and images)
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          drawCtx.putImageData(imageData, 0, 0);
-          cleanDrawingsRef.current = imageData;
-        }
-      }
     };
 
     drawContent();
