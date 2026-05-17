@@ -39,6 +39,7 @@ const characterSchema = z.object({
   hpMax: z.number().int().min(0).default(10),
   vigor: z.number().int().min(0).default(0),
   vigorMax: z.number().int().min(0).default(0),
+  vigorType: z.enum(["vigor", "mana"]).default("vigor"),
   notes: z.string().optional(),
 });
 
@@ -150,7 +151,7 @@ export const rpgRouter = router({
       }),
 
     upsert: protectedProcedure
-      .input(z.object({ characterId: z.number(), data: attributeSchema }))
+      .input(z.object({ characterId: z.number(), attributes: attributeSchema }))
       .mutation(async ({ ctx, input }) => {
         // Validar que characterId eh valido
         if (input.characterId <= 0) {
@@ -163,7 +164,7 @@ export const rpgRouter = router({
         if (character.userId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
-        return upsertCharacterAttributes(input.characterId, input.data);
+        return upsertCharacterAttributes(input.characterId, input.attributes);
       }),
   }),
 
@@ -266,10 +267,17 @@ export const rpgRouter = router({
     updateRole: protectedProcedure
       .input(z.object({ lobbyId: z.number(), role: z.enum(["mestre", "jogador", "espectador", "indefinido"]) }))
       .mutation(async ({ ctx, input }) => {
+        const lobby = await getLobbyById(input.lobbyId);
+        if (!lobby) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Lobby nao encontrado" });
+        }
+        if (lobby.masterId === ctx.user.id && input.role !== "mestre") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "O criador do lobby deve permanecer como Mestre" });
+        }
         if (input.role === "mestre") {
           const existingMaster = await getMasterInLobby(input.lobbyId);
           if (existingMaster && existingMaster.userId !== ctx.user.id) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Já existe um Mestre neste lobby" });
+            throw new TRPCError({ code: "FORBIDDEN", message: "Ja existe um Mestre neste lobby" });
           }
         }
         return upsertSessionParticipant(ctx.user.id, input.lobbyId, null, input.role);

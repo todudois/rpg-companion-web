@@ -59,7 +59,7 @@ export default function CharacterAttributesPage() {
     try {
       await upsertMutation.mutateAsync({
         characterId: activeCharacterId,
-        data: formData as any,
+        attributes: formData as any,
       });
       await utils.rpg.attributes.get.invalidate({ characterId: activeCharacterId });
       toast.success("Atributos salvos com sucesso!");

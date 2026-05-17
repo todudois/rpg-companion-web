@@ -8,7 +8,7 @@ import { Users, Crown, Sword, Eye } from "lucide-react";
 
 export default function LobbyPage() {
   const { user } = useAuth();
-  const { activeRole, setActiveRole, activeCharacterId, setActiveCharacterId, activeMasterId } = useRPG();
+  const { activeRole, setActiveRole, activeCharacterId, setActiveCharacterId, activeMasterId, isLobbyCreator } = useRPG();
   const { data: characters } = trpc.rpg.characters.list.useQuery();
   const { data: allUsers, refetch: refetchUsers } = trpc.rpg.session.getUsers.useQuery(
     { lobbyId: activeMasterId || 0 },
@@ -54,7 +54,7 @@ export default function LobbyPage() {
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <Button
                 onClick={() => handleRoleChange("mestre")}
-                disabled={hasMaster && currentUserRole !== "mestre"}
+                disabled={!isLobbyCreator || (hasMaster && currentUserRole !== "mestre")}
                 variant={activeRole === "mestre" ? "default" : "outline"}
                 className={`h-20 sm:h-24 text-xs sm:text-lg flex flex-col items-center justify-center gap-1 sm:gap-2 ${
                   activeRole === "mestre"
@@ -90,6 +90,9 @@ export default function LobbyPage() {
                 <span>Espectador</span>
               </Button>
             </div>
+            {!isLobbyCreator && (
+              <p className="text-xs sm:text-sm text-amber-400 mt-2 sm:mt-3">ℹ️ Apenas o criador do lobby pode ser Mestre</p>
+            )}
             {hasMaster && currentUserRole !== "mestre" && (
               <p className="text-xs sm:text-sm text-red-400 mt-2 sm:mt-3">⚠️ Já existe um Mestre neste lobby</p>
             )}

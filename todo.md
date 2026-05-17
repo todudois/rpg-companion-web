@@ -301,5 +301,12 @@
 ## Melhorias Críticas (Novo)
 
 - [x] Criar teste integrado de sincronização de canvas (mestre + múltiplos jogadores) - Removido por problemas de DB
-- [ ] Implementar WebSockets para sincronização instantânea do canvas
+- [ ] Implementar WebSockets para sincronização instantânea do canvas (Bloqueado: Requer mudanças arquiteturais significativas)
 - [x] Exibir personagens selecionados dos participantes em vez de nomes
+
+## Melhorias Solicitadas pelo Usuário (Novo)
+
+- [x] Resetar informações de lobby ao excluir (participantes, canvas)
+- [x] Adicionar aba de criação de personagens na seleção de lobby
+- [x] Adicionar criação/edição de personagens dentro do lobby
+- [x] Criador do lobby vira mestre automaticamente e não pode trocar role

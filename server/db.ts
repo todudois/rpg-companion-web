@@ -367,7 +367,10 @@ export async function deleteLobby(id: number) {
   const db = await getDb();
   if (!db) return;
   
-  // Deletar participantes primeiro
+  // Deletar canvas do mestre primeiro
+  await db.delete(masterCanvasData).where(eq(masterCanvasData.lobbyId, id));
+  
+  // Deletar participantes
   await db.delete(sessionParticipants).where(eq(sessionParticipants.lobbyId, id));
   
   // Deletar lobby
