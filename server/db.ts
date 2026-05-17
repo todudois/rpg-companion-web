@@ -218,18 +218,23 @@ export async function getMasterCanvasData(userId: number) {
   return result.length > 0 ? result[0] : null;
 }
 
-export async function upsertMasterCanvasData(userId: number, canvasData: string) {
+export async function upsertMasterCanvasData(userId: number, canvasData: string, imagesData?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const existing = await getMasterCanvasData(userId);
   
   if (existing) {
-    return db.update(masterCanvasData).set({ canvasData }).where(eq(masterCanvasData.userId, userId));
+    const updateData: any = { canvasData };
+    if (imagesData !== undefined) {
+      updateData.imagesData = imagesData;
+    }
+    return db.update(masterCanvasData).set(updateData).where(eq(masterCanvasData.userId, userId));
   } else {
     return db.insert(masterCanvasData).values({
       userId,
       canvasData,
+      imagesData: imagesData || null,
     });
   }
 }

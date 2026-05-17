@@ -273,3 +273,10 @@
 
 - [x] Corrigir múltiplos desenhos de formas geométricas
 - [x] Corrigir salvamento desnecessário sem ações
+
+
+## Sincronização de Canvas - Jogadores não veem desenhos (Bug Crítico)
+
+- [x] Investigar como canvas é salvo no banco de dados
+- [x] Verificar se imagens estão sendo persistidas com o canvas
+- [x] Corrigir sincronização para jogadores verem desenhos e imagens

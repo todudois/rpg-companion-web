@@ -238,10 +238,10 @@ export const rpgRouter = router({
       }),
 
     save: protectedProcedure
-      .input(z.object({ canvasData: z.string() }))
+      .input(z.object({ canvasData: z.string(), imagesData: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         // Only the user can save their own canvas
-        return upsertMasterCanvasData(ctx.user.id, input.canvasData);
+        return upsertMasterCanvasData(ctx.user.id, input.canvasData, input.imagesData);
       }),
   }),
 

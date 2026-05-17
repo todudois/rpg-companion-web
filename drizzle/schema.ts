@@ -112,10 +112,12 @@ export type InsertDiceRoll = typeof diceRolls.$inferInsert;
 /**
  * Master canvas data - stores drawing data for the master's screen
  */
+// Image metadata stored in imagesData JSON: {id, url, x, y, width, height, zIndex}
 export const masterCanvasData = mysqlTable("masterCanvasData", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   canvasData: text("canvasData").notNull(), // Base64 encoded canvas image
+  imagesData: text("imagesData"), // JSON array of image metadata {id, url, x, y, width, height, zIndex}
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

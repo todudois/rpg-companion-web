@@ -1,0 +1,1 @@
+ALTER TABLE `masterCanvasData` ADD `imagesData` text;

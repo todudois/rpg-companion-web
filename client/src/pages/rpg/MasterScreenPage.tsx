@@ -22,6 +22,7 @@ interface DrawableImage {
   width: number;
   height: number;
   zIndex?: number;
+  url?: string; // Data URL or S3 URL for persistence
 }
 
 interface CanvasState {
@@ -213,7 +214,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
   }, [savedCanvas, isLoading]);
 
-  // Redraw canvas with images
+  // Redraw canvas with images and saved canvas data
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -221,28 +222,96 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Redraw background
-    ctx.fillStyle = "#111827";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const drawContent = () => {
+      // Redraw background
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw all images sorted by z-index
-    const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-    sortedImages.forEach((img) => {
-      ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
-
-      // Draw selection box if selected
-      if (img.id === selectedImageId && !readOnly) {
-        ctx.strokeStyle = "#fbbf24";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(img.x, img.y, img.width, img.height);
-
-        // Draw resize handle
-        const handleSize = 10;
-        ctx.fillStyle = "#fbbf24";
-        ctx.fillRect(img.x + img.width - handleSize, img.y + img.height - handleSize, handleSize, handleSize);
+      // Draw saved canvas data (drawings) if available
+      if (savedCanvas?.canvasData) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          drawImagesOnCanvas();
+        };
+        img.onerror = () => {
+          drawImagesOnCanvas();
+        };
+        img.src = savedCanvas.canvasData;
+      } else {
+        drawImagesOnCanvas();
       }
-    });
-  }, [drawableImages, selectedImageId, readOnly]);
+    };
+
+    const drawImagesOnCanvas = () => {
+      // Draw all images sorted by z-index
+      const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+      sortedImages.forEach((img) => {
+        ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
+
+        // Draw selection box if selected
+        if (img.id === selectedImageId && !readOnly) {
+          ctx.strokeStyle = "#fbbf24";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(img.x, img.y, img.width, img.height);
+
+          // Draw resize handle
+          const handleSize = 10;
+          ctx.fillStyle = "#fbbf24";
+          ctx.fillRect(img.x + img.width - handleSize, img.y + img.height - handleSize, handleSize, handleSize);
+        }
+      });
+    };
+
+    drawContent();
+  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData]);
+
+  // Load images from savedCanvas.imagesData when canvas is fetched
+  useEffect(() => {
+    if (!savedCanvas?.imagesData) return;
+    
+    try {
+      const imagesMetadata = JSON.parse(savedCanvas.imagesData);
+      const loadedImages: DrawableImage[] = [];
+      let loadedCount = 0;
+      
+      imagesMetadata.forEach((metadata: any) => {
+        if (metadata.url) {
+          const img = new Image();
+          img.onload = () => {
+            loadedImages.push({
+              id: metadata.id,
+              img,
+              x: metadata.x,
+              y: metadata.y,
+              width: metadata.width,
+              height: metadata.height,
+              zIndex: metadata.zIndex || 0,
+              url: metadata.url,
+            });
+            loadedCount++;
+            
+            if (loadedCount === imagesMetadata.length) {
+              setDrawableImages(loadedImages);
+            }
+          };
+          img.onerror = () => {
+            loadedCount++;
+            if (loadedCount === imagesMetadata.length) {
+              setDrawableImages(loadedImages);
+            }
+          };
+          img.src = metadata.url;
+        }
+      });
+      
+      if (imagesMetadata.length === 0) {
+        setDrawableImages([]);
+      }
+    } catch (error) {
+      console.error("Failed to parse imagesData:", error);
+    }
+  }, [savedCanvas?.imagesData]);
 
   // Jogadores atualizam o canvas a cada 2 segundos
   useEffect(() => {
@@ -456,7 +525,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         const centerX = Math.max(50, canvas.width / 2 - 100);
         const centerY = Math.max(50, canvas.height / 2 - 100);
         
-        const newImage: DrawableImage = {
+          const newImage: DrawableImage = {
           id: Date.now().toString(),
           img,
           x: centerX,
@@ -464,10 +533,15 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           width: Math.min(200, img.width),
           height: Math.min(200, img.height),
           zIndex: Math.max(...drawableImages.map(i => i.zIndex || 0), 0) + 1,
+          url: e.target?.result as string, // Store data URL for persistence
         };
         setDrawableImages([...drawableImages, newImage]);
         setSelectedImageId(newImage.id);
         setDrawTool("select");
+        // Auto-save after adding image
+        hadDrawingRef.current = true;
+        saveCanvasDebounced();
+        saveToHistoryDebounced();
       };
       img.src = e.target?.result as string;
     };
@@ -496,8 +570,23 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       });
 
       const canvasData = tempCanvas.toDataURL("image/png");
+      
+      // Serialize image metadata
+      const imagesData = JSON.stringify(
+        drawableImages.map((img) => ({
+          id: img.id,
+          x: img.x,
+          y: img.y,
+          width: img.width,
+          height: img.height,
+          zIndex: img.zIndex || 0,
+          url: img.url,
+        }))
+      );
+      
       await saveCanvasMutation.mutateAsync({
         canvasData,
+        imagesData: imagesData.length > 2 ? imagesData : undefined,
       });
       // Only show toast if it's a manual save (not auto-save)
       if (!saveTimeoutRef.current) {
