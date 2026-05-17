@@ -820,51 +820,58 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   };
 
   const handleSaveCanvas = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const canvas = canvasRef.current;
+  const drawingsCanvas = drawingsCanvasRef.current; // Pega o layer apenas com os traços
+  if (!canvas) return;
 
-    try {
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext("2d", { alpha: true });
-      if (!tempCtx) return;
+  try {
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext("2d", { alpha: true });
+    if (!tempCtx) return;
 
-      tempCtx.drawImage(canvas, 0, 0);
-
-      drawableImages.forEach((img) => {
-        tempCtx.drawImage(img.img, img.x, img.y, img.width, img.height);
-      });
-
-      const canvasData = tempCanvas.toDataURL("image/png");
-      
-      // Serialize image metadata
-      const imagesData = JSON.stringify(
-        drawableImages.map((img) => ({
-          id: img.id,
-          x: img.x,
-          y: img.y,
-          width: img.width,
-          height: img.height,
-          zIndex: img.zIndex || 0,
-          url: img.url,
-        }))
-      );
-      
-      await saveCanvasMutation.mutateAsync({
-        canvasData,
-        imagesData: imagesData.length > 2 ? imagesData : undefined,
-        lobbyId: activeLobbyId || 0,
-      });
-      // Only show toast if it's a manual save (not auto-save)
-      if (!saveTimeoutRef.current) {
-        toast.success("Canvas salvo com sucesso!");
-      }
-    } catch (error: any) {
-      const errorMessage = typeof error === 'string' ? error : error?.message || "Erro ao salvar canvas";
-      toast.error(String(errorMessage));
+    // CORREÇÃO: Desenha apenas o layer de desenhos no canvas temporário
+    if (drawingsCanvas) {
+      tempCtx.drawImage(drawingsCanvas, 0, 0);
+    } else {
+      // Fallback: se não houver desenhos, salva um fundo limpo
+      tempCtx.fillStyle = "#111827";
+      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
     }
-  };
+
+    // REMOVIDO: O laço forEach que desenhava drawableImages aqui foi deletado.
+    // As imagens são dinâmicas e vão apenas no imagesData.
+
+    const canvasData = tempCanvas.toDataURL("image/png");
+    
+    // Serialize image metadata
+    const imagesData = JSON.stringify(
+      drawableImages.map((img) => ({
+        id: img.id,
+        x: img.x,
+        y: img.y,
+        width: img.width,
+        height: img.height,
+        zIndex: img.zIndex || 0,
+        url: img.url,
+      }))
+    );
+    
+    await saveCanvasMutation.mutateAsync({
+      canvasData,
+      imagesData: imagesData.length > 2 ? imagesData : undefined,
+      lobbyId: activeLobbyId || 0,
+    });
+    
+    if (!saveTimeoutRef.current) {
+      toast.success("Canvas salvo com sucesso!");
+    }
+  } catch (error: any) {
+    const errorMessage = typeof error === 'string' ? error : error?.message || "Erro ao salvar canvas";
+    toast.error(String(errorMessage));
+  }
+};
 
   return (
     <div className="space-y-3 sm:space-y-4 flex flex-col h-full">
