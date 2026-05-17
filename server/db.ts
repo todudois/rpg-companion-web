@@ -230,26 +230,27 @@ export async function upsertMasterCanvasData(userId: number, lobbyId: number, ca
   if (!db) throw new Error("Database not available");
   
   try {
-    // Try to insert first
-    const insertResult = await db.insert(masterCanvasData).values({
-      userId,
-      lobbyId,
-      canvasData,
-      imagesData: imagesData || null,
-    }).catch(async (error: any) => {
-      // If insert fails due to duplicate key, do update
-      if (error.code === 'ER_DUP_ENTRY') {
-        return db.update(masterCanvasData)
-          .set({
-            canvasData,
-            imagesData: imagesData || null,
-            updatedAt: new Date(),
-          })
-          .where(and(eq(masterCanvasData.userId, userId), eq(masterCanvasData.lobbyId, lobbyId)));
-      }
-      throw error;
-    });
-    return insertResult;
+    // Check if record exists
+    const existing = await getMasterCanvasData(userId, lobbyId);
+    
+    if (existing) {
+      // Update existing record
+      return db.update(masterCanvasData)
+        .set({
+          canvasData,
+          imagesData: imagesData || null,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(masterCanvasData.userId, userId), eq(masterCanvasData.lobbyId, lobbyId)));
+    } else {
+      // Insert new record
+      return db.insert(masterCanvasData).values({
+        userId,
+        lobbyId,
+        canvasData,
+        imagesData: imagesData || null,
+      });
+    }
   } catch (error) {
     console.error("Error upserting master canvas data:", error);
     throw error;
