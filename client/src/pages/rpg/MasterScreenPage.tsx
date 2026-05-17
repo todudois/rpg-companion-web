@@ -63,6 +63,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const resizeTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hadDrawingRef = useRef<boolean>(false);
+  const isMovingImageRef = useRef<boolean>(false);
   const [history, setHistory] = useState<CanvasState[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -228,6 +229,34 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
+    // If we're moving/resizing, use requestAnimationFrame for smooth animation
+    if (isMovingImageRef.current) {
+      const animationFrameId = requestAnimationFrame(() => {
+        // Only redraw images on top of existing canvas (don't clear)
+        const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+        
+        // Redraw all images (this overwrites old positions)
+        sortedImages.forEach((img) => {
+          ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
+
+          // Draw selection box if selected
+          if (img.id === selectedImageId && !readOnly) {
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(img.x, img.y, img.width, img.height);
+
+            // Draw resize handle
+            const handleSize = 10;
+            ctx.fillStyle = "#fbbf24";
+            ctx.fillRect(img.x + img.width - handleSize, img.y + img.height - handleSize, handleSize, handleSize);
+          }
+        });
+      });
+
+      return () => cancelAnimationFrame(animationFrameId);
+    }
+
+    // Normal redraw (not moving) - full canvas refresh
     const drawContent = () => {
       // Save current canvas state (drawings)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -240,11 +269,6 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       ctx.putImageData(imageData, 0, 0);
       
       // Draw images on top
-      drawImagesOnCanvas();
-    };
-
-    const drawImagesOnCanvas = () => {
-      // Draw all images sorted by z-index
       const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
       sortedImages.forEach((img) => {
         ctx.drawImage(img.img, img.x, img.y, img.width, img.height);
@@ -264,7 +288,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     };
 
     drawContent();
-  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData]);
+  }, [drawableImages, selectedImageId, readOnly, savedCanvas?.canvasData, isMovingImageRef]);
 
   // Load initial canvas data for players only
   useEffect(() => {
@@ -432,6 +456,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       if (!img) return;
 
       if (resizeMode === "drag") {
+        isMovingImageRef.current = true;
         const dx = pos.x - (lastPos?.x || pos.x);
         const dy = pos.y - (lastPos?.y || pos.y);
         setDrawableImages(
@@ -440,6 +465,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
           )
         );
       } else if (resizeMode === "resize") {
+        isMovingImageRef.current = true;
         const newWidth = Math.max(20, pos.x - img.x);
         const newHeight = Math.max(20, pos.y - img.y);
         setDrawableImages(
@@ -513,6 +539,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   };
 
   const handleMouseUp = () => {
+    isMovingImageRef.current = false;
     setIsDrawing(false);
     setDraggedImageId(null);
     setResizeMode(null);

@@ -332,3 +332,5 @@
 
 - [x] Borracha não apaga corretamente - desenha com cor de fundo em vez de apagar
 - [x] Imagens selecionadas deletam desenhos e formas geométricas do canvas
+
+- [ ] Mover imagens replica a imagem várias vezes ao longo do movimento
