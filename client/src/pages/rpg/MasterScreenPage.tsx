@@ -697,7 +697,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       {
         canvasData: canvas.toDataURL(),
         imagesData: JSON.stringify([]),
-        lobbyId: activeLobbyId || ""
+        lobbyId: activeLobbyId || 0
       },
       {
         onSuccess: () => {
