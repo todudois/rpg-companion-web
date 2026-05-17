@@ -233,12 +233,11 @@ export async function upsertMasterCanvasData(userId: number, lobbyId: number, ca
     // Use raw SQL for MySQL ON DUPLICATE KEY UPDATE
     const result = await db.execute(
       `INSERT INTO masterCanvasData (userId, lobbyId, canvasData, imagesData, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, NOW(), NOW())
+       VALUES (${userId}, ${lobbyId}, ${db.escape(canvasData)}, ${db.escape(imagesData || null)}, NOW(), NOW())
        ON DUPLICATE KEY UPDATE
        canvasData = VALUES(canvasData),
        imagesData = VALUES(imagesData),
-       updatedAt = NOW()`,
-      [userId, lobbyId, canvasData, imagesData || null]
+       updatedAt = NOW()`
     );
     return result;
   } catch (error) {
