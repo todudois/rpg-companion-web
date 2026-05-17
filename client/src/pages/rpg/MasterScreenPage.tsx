@@ -59,6 +59,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
   const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
   const [resizeMode, setResizeMode] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hadDrawingRef = useRef<boolean>(false);
   const [history, setHistory] = useState<CanvasState[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -123,11 +124,36 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     }, 300);
   };
 
+  // Helper function to draw geometric shapes
+  const drawGeometricShape = (ctx: CanvasRenderingContext2D, tool: string, start: { x: number; y: number } | null, end: { x: number; y: number }, color: string, size: number) => {
+    if (!start) return;
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size;
+    
+    if (tool === "rectangle") {
+      const width = end.x - start.x;
+      const height = end.y - start.y;
+      ctx.strokeRect(start.x, start.y, width, height);
+    } else if (tool === "circle") {
+      const radius = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+      ctx.beginPath();
+      ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
+      ctx.stroke();
+    } else if (tool === "line") {
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+    }
+  };
+
   // Debounced save function to avoid too many requests
   const saveCanvasDebounced = () => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
+    // Always schedule save - handleSaveCanvas will check if there's content
     saveTimeoutRef.current = setTimeout(() => {
       handleSaveCanvas();
     }, 500); // Wait 500ms after last action before saving
@@ -297,6 +323,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       }
     } else {
       setIsDrawing(true);
+      hadDrawingRef.current = true; // Mark that drawing started
       setLastPos(pos);
       setStartPos(pos); // Store initial position for geometric shapes
     }
@@ -337,41 +364,47 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      ctx.lineWidth = brushSize;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
+      // For geometric shapes, redraw the canvas to clear previous preview
+      if (["rectangle", "circle", "line"].includes(drawTool)) {
+        // Clear canvas and redraw from saved state
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Redraw saved canvas if available
+        if (savedCanvas?.canvasData) {
+          const img = new Image();
+          img.onload = () => {
+            ctx.drawImage(img, 0, 0);
+            // Redraw images and preview
+            const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+            sortedImages.forEach((drawImg) => {
+              ctx.drawImage(drawImg.img, drawImg.x, drawImg.y, drawImg.width, drawImg.height);
+            });
+            drawGeometricShape(ctx, drawTool, startPos, pos, drawColor, brushSize);
+          };
+          img.src = savedCanvas.canvasData;
+        } else {
+          // If no saved canvas, just redraw images and preview
+          const sortedImages = [...drawableImages].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+          sortedImages.forEach((drawImg) => {
+            ctx.drawImage(drawImg.img, drawImg.x, drawImg.y, drawImg.width, drawImg.height);
+          });
+          drawGeometricShape(ctx, drawTool, startPos, pos, drawColor, brushSize);
+        }
+      } else {
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
 
-      if (drawTool === "eraser") {
-        ctx.clearRect(pos.x - brushSize / 2, pos.y - brushSize / 2, brushSize, brushSize);
-      } else if (drawTool === "rectangle" && startPos) {
-        // Draw rectangle preview from start position
-        ctx.strokeStyle = drawColor;
-        ctx.lineWidth = brushSize;
-        const width = pos.x - startPos.x;
-        const height = pos.y - startPos.y;
-        ctx.strokeRect(startPos.x, startPos.y, width, height);
-      } else if (drawTool === "circle" && startPos) {
-        // Draw circle preview from start position
-        ctx.strokeStyle = drawColor;
-        ctx.lineWidth = brushSize;
-        const radius = Math.sqrt(Math.pow(pos.x - startPos.x, 2) + Math.pow(pos.y - startPos.y, 2));
-        ctx.beginPath();
-        ctx.arc(startPos.x, startPos.y, radius, 0, 2 * Math.PI);
-        ctx.stroke();
-      } else if (drawTool === "line" && startPos) {
-        // Draw line preview from start position
-        ctx.strokeStyle = drawColor;
-        ctx.lineWidth = brushSize;
-        ctx.beginPath();
-        ctx.moveTo(startPos.x, startPos.y);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
-      } else if (drawTool === "pen") {
-        ctx.strokeStyle = drawColor;
-        ctx.beginPath();
-        ctx.moveTo(lastPos.x, lastPos.y);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
+        if (drawTool === "eraser") {
+          ctx.clearRect(pos.x - brushSize / 2, pos.y - brushSize / 2, brushSize, brushSize);
+        } else if (drawTool === "pen") {
+          ctx.strokeStyle = drawColor;
+          ctx.beginPath();
+          ctx.moveTo(lastPos.x, lastPos.y);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+        }
       }
 
       setLastPos(pos);
@@ -385,9 +418,11 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     setLastPos(null);
     setStartPos(null);
     // Auto-save canvas after drawing
-    saveCanvasDebounced();
-    // Save to history
-    saveToHistoryDebounced();
+    if (hadDrawingRef.current) {
+      saveCanvasDebounced();
+      saveToHistoryDebounced();
+      hadDrawingRef.current = false; // Reset for next drawing
+    }
   };
 
   const handleClearCanvas = () => {

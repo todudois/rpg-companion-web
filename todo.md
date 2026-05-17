@@ -267,3 +267,9 @@
 - [x] Implementar sistema de camadas (frente/trás)
 - [x] Adicionar ferramentas de desenho avançadas (retângulo, círculo, linha)
 - [x] Testar todas as funcionalidades
+
+
+## Correção de Bugs do Canvas (Novo)
+
+- [x] Corrigir múltiplos desenhos de formas geométricas
+- [x] Corrigir salvamento desnecessário sem ações
