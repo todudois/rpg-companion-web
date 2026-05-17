@@ -280,3 +280,10 @@
 - [x] Investigar como canvas é salvo no banco de dados
 - [x] Verificar se imagens estão sendo persistidas com o canvas
 - [x] Corrigir sincronização para jogadores verem desenhos e imagens
+
+
+## Bugs Críticos de Canvas (Novo)
+
+- [x] Canvas é compartilhado entre lobbies (deve ser único por lobby)
+- [x] Polling não atualiza canvas após primeira sincronização
+- [x] Borracha não funciona corretamente

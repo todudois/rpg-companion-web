@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Lock, Users, Trash2, Copy } from "lucide-react";
 
 export default function LobbySelectionPage() {
-  const { setActiveMasterId, setActiveRole } = useRPG();
+  const { setActiveMasterId, setActiveRole, setActiveLobbyId } = useRPG();
   const [createName, setCreateName] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [joinCode, setJoinCode] = useState("");
@@ -46,6 +46,7 @@ export default function LobbySelectionPage() {
       setCreateName("");
       setCreatePassword("");
       if (result?.masterId) setActiveMasterId(result.masterId);
+      if (result?.id) setActiveLobbyId(result.id);
       setActiveRole("mestre");
       refetchMyLobbys();
     } catch (error: any) {
@@ -76,6 +77,7 @@ export default function LobbySelectionPage() {
       setJoinCode("");
       setJoinPassword("");
       if (result?.masterId) setActiveMasterId(result.masterId);
+      if (result?.id) setActiveLobbyId(result.id);
       // Definir role como "jogador" ao entrar em um lobby
       setActiveRole("jogador");
     } catch (error: any) {
@@ -238,6 +240,7 @@ export default function LobbySelectionPage() {
                                 size="sm"
                                 onClick={() => {
                                   setActiveMasterId(lobby.masterId || lobby.id);
+                                  setActiveLobbyId(lobby.id);
                                   setActiveRole("mestre");
                                 }}
                                 className="bg-amber-600 hover:bg-amber-700"

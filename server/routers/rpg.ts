@@ -229,19 +229,20 @@ export const rpgRouter = router({
   // Master canvas procedures - shared canvas for master and players
   masterCanvas: router({
     get: protectedProcedure
-      .input(z.object({ masterId: z.number().optional() }).optional())
+      .input(z.object({ masterId: z.number().optional(), lobbyId: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
         // If masterId is provided, get the master's canvas (for players viewing)
         // Otherwise, get the current user's canvas (for the master)
         const userId = input?.masterId || ctx.user.id;
-        return getMasterCanvasData(userId);
+        const lobbyId = input?.lobbyId;
+        return getMasterCanvasData(userId, lobbyId);
       }),
 
     save: protectedProcedure
-      .input(z.object({ canvasData: z.string(), imagesData: z.string().optional() }))
+      .input(z.object({ canvasData: z.string(), imagesData: z.string().optional(), lobbyId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         // Only the user can save their own canvas
-        return upsertMasterCanvasData(ctx.user.id, input.canvasData, input.imagesData);
+        return upsertMasterCanvasData(ctx.user.id, input.lobbyId, input.canvasData, input.imagesData);
       }),
   }),
 

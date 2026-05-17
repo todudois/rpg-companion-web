@@ -32,17 +32,17 @@ interface CanvasState {
 
 export default function MasterScreenPage({ readOnly = false }: MasterScreenPageProps) {
   const { user } = useAuth();
-  const { activeMasterId, activeRole } = useRPG();
+  const { activeMasterId, activeRole, activeLobbyId } = useRPG();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const imageFileRef = useRef<HTMLInputElement>(null);
   const { data: savedCanvas, refetch } = trpc.rpg.masterCanvas.get.useQuery(
-    { masterId: readOnly ? activeMasterId || undefined : undefined }
+    { masterId: readOnly ? activeMasterId || undefined : undefined, lobbyId: activeLobbyId || undefined }
   );
   const { data: allUsers } = trpc.rpg.session.getUsers.useQuery(
-    { lobbyId: activeMasterId || 0 },
-    { enabled: !!activeMasterId }
+    { lobbyId: activeLobbyId || 0 },
+    { enabled: !!activeLobbyId }
   );
   const saveCanvasMutation = trpc.rpg.masterCanvas.save.useMutation();
 
@@ -315,7 +315,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
 
   // Jogadores atualizam o canvas a cada 2 segundos
   useEffect(() => {
-    if (!readOnly) return;
+    if (!readOnly || !activeLobbyId) return;
 
     // Jogadores atualizam o canvas a cada 1 segundo para sincronizacao mais rapida
     const interval = setInterval(() => {
@@ -323,7 +323,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [readOnly, refetch]);
+  }, [readOnly, refetch, activeLobbyId]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -466,7 +466,15 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
         ctx.lineJoin = "round";
 
         if (drawTool === "eraser") {
-          ctx.clearRect(pos.x - brushSize / 2, pos.y - brushSize / 2, brushSize, brushSize);
+          // Use destination-out to create a proper eraser effect
+          const prevComposite = ctx.globalCompositeOperation;
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.strokeStyle = "rgba(0,0,0,1)";
+          ctx.beginPath();
+          ctx.moveTo(lastPos.x, lastPos.y);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+          ctx.globalCompositeOperation = prevComposite;
         } else if (drawTool === "pen") {
           ctx.strokeStyle = drawColor;
           ctx.beginPath();
@@ -587,6 +595,7 @@ export default function MasterScreenPage({ readOnly = false }: MasterScreenPageP
       await saveCanvasMutation.mutateAsync({
         canvasData,
         imagesData: imagesData.length > 2 ? imagesData : undefined,
+        lobbyId: activeLobbyId || 0,
       });
       // Only show toast if it's a manual save (not auto-save)
       if (!saveTimeoutRef.current) {

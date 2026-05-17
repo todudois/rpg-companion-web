@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, characters, characterAttributes, characterSkills, diceRolls, masterCanvasData, sessionParticipants, lobbys, Character, CharacterAttribute, CharacterSkill, DiceRoll, InsertCharacter, InsertCharacterAttribute, InsertCharacterSkill, InsertDiceRoll, InsertMasterCanvasData, SessionParticipant, InsertSessionParticipant, Lobby, InsertLobby } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -210,29 +210,37 @@ export async function getDiceRollsByUserId(userId: number, limit: number = 50) {
 }
 
 // Master canvas queries
-export async function getMasterCanvasData(userId: number) {
+export async function getMasterCanvasData(userId: number, lobbyId?: number) {
   const db = await getDb();
   if (!db) return null;
   
-  const result = await db.select().from(masterCanvasData).where(eq(masterCanvasData.userId, userId));
+  // If lobbyId is provided, get canvas for that specific lobby
+  // Otherwise, get the first canvas for the user (for backward compatibility)
+  const conditions = [eq(masterCanvasData.userId, userId)];
+  if (lobbyId) {
+    conditions.push(eq(masterCanvasData.lobbyId, lobbyId));
+  }
+  
+  const result = await db.select().from(masterCanvasData).where(and(...conditions));
   return result.length > 0 ? result[0] : null;
 }
 
-export async function upsertMasterCanvasData(userId: number, canvasData: string, imagesData?: string) {
+export async function upsertMasterCanvasData(userId: number, lobbyId: number, canvasData: string, imagesData?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const existing = await getMasterCanvasData(userId);
+  const existing = await getMasterCanvasData(userId, lobbyId);
   
   if (existing) {
-    const updateData: any = { canvasData };
+    const updateData: any = { canvasData, updatedAt: new Date() };
     if (imagesData !== undefined) {
       updateData.imagesData = imagesData;
     }
-    return db.update(masterCanvasData).set(updateData).where(eq(masterCanvasData.userId, userId));
+    return db.update(masterCanvasData).set(updateData).where(and(eq(masterCanvasData.userId, userId), eq(masterCanvasData.lobbyId, lobbyId)));
   } else {
     return db.insert(masterCanvasData).values({
       userId,
+      lobbyId,
       canvasData,
       imagesData: imagesData || null,
     });

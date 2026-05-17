@@ -116,6 +116,7 @@ export type InsertDiceRoll = typeof diceRolls.$inferInsert;
 export const masterCanvasData = mysqlTable("masterCanvasData", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
+  lobbyId: int("lobbyId").notNull(), // Canvas is unique per lobby
   canvasData: text("canvasData").notNull(), // Base64 encoded canvas image
   imagesData: text("imagesData"), // JSON array of image metadata {id, url, x, y, width, height, zIndex}
   createdAt: timestamp("createdAt").defaultNow().notNull(),
