@@ -229,7 +229,7 @@ export default function Home() {
               )}
             </TabsList>
 
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto relative">
               <TabsContent value="lobby" className="mt-0">
                 <LobbyPage />
               </TabsContent>
@@ -247,7 +247,7 @@ export default function Home() {
               )}
 
               {(activeRole === "mestre" || activeRole === "jogador" || activeRole === "espectador") && (
-                <div style={{ display: activeTab === "mestre" ? "block" : "none", height: "100%" }}>
+                <div style={{ display: activeTab === "mestre" ? "block" : "none", width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}>
                   <MasterScreenPage readOnly={activeRole !== "mestre"} />
                 </div>
               )}
